@@ -12,3 +12,5 @@
 
 #define NOSE_FUSE_JOINED true // are the nose and fuse strings joined?
 #define WING_NAV_LEDS 8 // wing LEDs that are navlights
+
+#define LED_POWER 15 // mA
