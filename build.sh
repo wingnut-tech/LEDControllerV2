@@ -16,16 +16,19 @@ build() {
 
   mkdir -p ${cachedir}
 
+  cp ${1}              ${cachedir}/layout.h
   cp LEDController.ino ${cachedir}/${layoutname}.ino
-  cp -r LEDController.h src ${cachedir}
-  cp ${1} ${cachedir}/layout.h
+  cp LEDController.h   ${cachedir}/
+  cp -r src            ${cachedir}/
   
-  cd ${cachedir}
 
   echo "Queueing up ${layoutname}..."
 
-  out=$(arduino-cli compile --fqbn arduino:avr:nano --output-dir _build)
-  mv _build/${layoutname}.ino.hex ../../build/${outname}
+  out=$(
+    cd ${cachedir}
+    arduino-cli compile --fqbn arduino:avr:nano --output-dir _build
+    mv _build/${layoutname}.ino.hex ../../build/${outname}
+  )
 
   echo -e "--- ${layoutname} ---\n${out}\n\n"
 }
