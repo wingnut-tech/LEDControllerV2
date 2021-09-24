@@ -1,3 +1,7 @@
+#pragma once
+
+// Layout: FT Night Radian
+
 // number of LEDs in specific strings
 #define WING_LEDS 31 // total wing LEDs
 #define NOSE_LEDS 4 // total nose LEDs
@@ -12,5 +16,3 @@
 
 #define NOSE_FUSE_JOINED true // are the nose and fuse strings joined?
 #define WING_NAV_LEDS 8 // wing LEDs that are navlights
-
-#define LED_POWER 15 // mA
