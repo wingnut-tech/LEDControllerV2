@@ -1,0 +1,35 @@
+name: Build and release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+
+      - name: Install core/libs
+        run: |
+             arduino-cli core update-index
+             arduino-cli core install "arduino:avr"
+             arduino-cli lib install "FastLED@3.4.0" "Adafruit BMP280 Library@2.3.0"
+
+      - name: Compile configs
+        run: ./build.sh --all
+
+      - name: Generate changelog
+        run: awk '/^## / {if (p) {exit}; {p=1}} p' CHANGELOG.md > latest-CHANGELOG.md
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: latest-CHANGELOG.md
+          files: build/*
+
