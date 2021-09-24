@@ -1,3 +1,7 @@
+#pragma once
+
+// Layout: FT Night Radian
+
 // number of LEDs in specific strings
 #define WING_LEDS 31 // total wing LEDs
 #define NOSE_LEDS 4 // total nose LEDs

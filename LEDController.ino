@@ -1,9 +1,10 @@
-//
-// ---- FT Night Radian LED Controller ----
-//
-// VERSION: 1.2.4
-// DATE:    2021-09-02
-//
+/*
+ * Wingnut Tech LED Controller
+ * 
+ * VERSION: 1.2.4
+ * DATE:    2021-09-02
+ * 
+ */
 
 #include "layout.h"
 #include "LEDController.h"
@@ -12,6 +13,7 @@
 #include "src/eeprom.h"
 #include "src/shows.h"
 #include "src/mode.h"
+#include "src/pins.h"
 
 #define FASTLED_INTERNAL // disables the FastLED version message that looks like an error
 #include <FastLED.h>
@@ -49,16 +51,10 @@ LED Nose = LED(noseleds, NOSE_LEDS, NOSE_REV);
 LED Fuse = LED(fuseleds, FUSE_LEDS, FUSE_REV);
 LED Tail = LED(tailleds, TAIL_LEDS, TAIL_REV);
 
-//            _                
-//   ___  ___| |_ _   _ _ __   
-//  / __|/ _ \ __| | | | '_ \  
-//  \__ \  __/ |_| |_| | |_) | 
-//  |___/\___|\__|\__,_| .__/  
-//                     |_|     
-
-// Function: setup
-// ---------------
-//   arduino first-run function
+/**
+ * @brief Arduino first-run function
+ * 
+ */
 void setup() {
   Serial.begin(115200);
 
@@ -97,19 +93,27 @@ void setup() {
   FastLED.addLeds<NEOPIXEL, NOSE_PIN>(Nose.leds, NOSE_LEDS);
   FastLED.addLeds<NEOPIXEL, TAIL_PIN>(Tail.leds, TAIL_LEDS);
 
+  // LED power calculations
+  // there's a difference between stock radian LEDs and the ones we're selling in kits
+  #ifndef TMP_BRIGHTNESS
+  #  ifndef LED_POWER
+  #    define MAX_BRIGHTNESS 255
+  #  else
+  #    define MAX_POWER 1500 // mA
+  #    define NUM_LEDS (WING_LEDS + WING_LEDS + NOSE_LEDS + FUSE_LEDS + TAIL_LEDS + TAIL_LEDS)
+  #    define MAX_BRIGHTNESS min(255, (255 * (MAX_POWER / (NUM_LEDS * LED_POWER))))
+  #  endif
+  #else
+  #  define MAX_BRIGHTNESS TMP_BRIGHTNESS
+  #endif
+
   FastLED.setBrightness(MAX_BRIGHTNESS);
 }
 
-//                   _         _                    
-//   _ __ ___   __ _(_)_ __   | | ___   ___  _ __   
-//  | '_ ` _ \ / _` | | '_ \  | |/ _ \ / _ \| '_ \  
-//  | | | | | | (_| | | | | | | | (_) | (_) | |_) | 
-//  |_| |_| |_|\__,_|_|_| |_| |_|\___/ \___/| .__/  
-//                                          |_|     
-
-// Function: loop
-// --------------
-//   arduino main loop
+/**
+ * @brief Arduino main loop
+ * 
+ */
 void loop() {
   static bool firstrun = true;
   static unsigned long prevMillis = 0; // keeps track of last millis value for regular show timing

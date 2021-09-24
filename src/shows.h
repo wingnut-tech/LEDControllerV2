@@ -3,175 +3,167 @@
 #define FASTLED_INTERNAL
 #include <FastLED.h>
 
-// Function: stepShow
-// ------------------
-//   this is the main "show rendering" update function
-//   this plays the next "frame" of the current show
+#define NUM_SHOWS_WITH_ALTITUDE 20 // total number of shows. 1+the last caseshow number
+
+/**
+ * @brief This is the main show rendering update function. It plays the next "frame" of the current show.
+ * 
+ */
 void stepShow();
 
 // Function: blank
 // ---------------
-//   Turn off all LEDs
+/**
+ * @brief Turn off all LEDs
+ * 
+ */
 void blank();
 
-// Function: setColor(CRGB)
-// ------------------
-//   sets all LEDs to a solid color
-//
-//   color: a CRGB color to set the LEDs to
+/**
+ * @brief Sets all LEDs to a solid color
+ * 
+ * @param color 
+ */
 void setColor(const CRGB& color);
 
-// Function: setColor(CRGBPalette16)
-// ------------------
-//   spreads a palette across all LEDs
-//
-//   palette: pre-defined CRGBPalette16 object that will be used
+/**
+ * @brief Spreads a palette across all LEDs
+ * 
+ * @param palette 
+ */
 void setColor (const CRGBPalette16& palette);
 
-// Function: LetterToColor
-// -----------------------
-//   convert the letters in the static patterns to color values
-//
-//   letter: a single char string that will become an actual CRGB value
-//
-//   returns: a new CRGB color
+/**
+ * @brief Convert the letters in static patterns to color values
+ * 
+ * @param letter 
+ * @return CRGB 
+ */
 CRGB LetterToColor (char letter);
 
-// Function: setPattern
-// --------------------
-//   sets wings to a static pattern
-//
-//   pattern: pre-defined static pattern array
+/**
+ * @brief Sets wings to a static pattern
+ * 
+ * @param pattern 
+ */
 void setPattern (char pattern[]);
 
-// Function: setInitPattern
-// ------------------------
-//   set all LEDs to the static init pattern
+/**
+ * @brief Set all LEDs to the static init pattern
+ * 
+ */
 void setInitPattern ();
 
-// Function: setNoseFuse
-// ---------------------
-//   sets leds along nose and fuse as if they were the same strip
-//   range is 0 - ((NOSE_LEDS+FUSE_LEDS)-1)
-//
-//   led: which LED to modify
-//   color: a CRGB color to set the LED to
-//   (optional) addor: set true to "or" the new led color with the old value. if not set, defaults to false
-// void setNoseFuse(uint8_t led, const CRGB& color) { setNoseFuse(led, color, false); } // overload for simple setting of leds
+/**
+ * @brief Sets LEDs along nose and fuse as if they were the same strip. Range is 0 - ((NOSE_LEDS+FUSE_LEDS)-1).
+ * 
+ * @param led 
+ * @param color 
+ * @param addor (optional) Adds new color to current color
+ */
 void setNoseFuse(uint8_t led, const CRGB& color, bool addor=false);
-// Function: setBothWings
-// ----------------------
-//   sets leds along both wings as if they were the same strip
-//   range is 0 - ((stopPoint*2)-1). left.stopPoint = 0, right.stopPoint = max
-//
-//   led: which LED to modify
-//   color: a CRGB color to set the LED to
-//   (optional) addor: set true to "or" the new led color with the old value. if not set, defaults to false
-// void setBothWings(uint8_t led, const CRGB& color) { setBothWings(led, color, false); } // overload for simple setting of leds
+
+/**
+ * @brief Sets leds along both wings as if they were the same strip. Range is 0 - ((stopPoint*2)-1).
+ * 
+ * @param led 
+ * @param color 
+ * @param addor (optional) Adds new color to current color
+ */
 void setBothWings(uint8_t led, const CRGB& color, bool addor=false);
 
-// Function: animateColor
-// ----------------------
-//   animates a palette across all LEDs
-//
-//   palette: pre-defined CRGBPalette16 object that will be used
-//   ledOffset: how much each led is offset in the palette compared to the previous led
-//   stepSize: how fast the leds will cycle through the palette
+/**
+ * @brief Animates a palette across all LEDs
+ * 
+ * @param palette 
+ * @param ledOffset 
+ * @param stepSize 
+ */
 void animateColor (const CRGBPalette16& palette, int ledOffset, int stepSize);
 
-// Function: colorWave1
-// --------------------
-//   rainbow pattern
-//
-//   ledOffset: how much each led is offset in the rainbow compared to the previous led
-//   l_interval: sets interval for this show
+/**
+ * @brief Rainbow pattern
+ * 
+ * @param ledOffset 
+ * @param l_interval 
+ */
 void colorWave1 (uint8_t ledOffset, uint8_t l_interval);
 
-// Function: chase/cylon
-// ---------------------
-//   LED chase functions with fadeout of the tail
-//   can do more traditional same-direction chase, or back-and-forth "cylon/knight-rider" style
-//
-//   color1: "main" color of the chase effect
-//   color2: "background" color
-//   speedWing: chase speed of the wing leds
-//   speedNose: chase speed of the nose leds
-//   speedFuse: chase speed of the fuse leds
-//   speedTail: chase speed of the tail leds
-//   (optional) cylon: if this is set, does back-and-forth effect. regular chase otherwise. overloads set this.
-// void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail) { // overload to do a chase pattern
-//   chase(color1, color2, speedWing, speedNose, speedFuse, speedTail, false);
-// }
-// // overload to do a cylon pattern
-// void cylon(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail) {
-//   chase(color1, color2, speedWing, speedNose, speedFuse, speedTail, true);
-// }
-// main chase function. can do either chase or cylon patterns
+/**
+ * @brief LED chase functions with fadeout of the tail. Can do more traditional same-direction chase, or back-and-forth "cylon/knight-rider" style.
+ * 
+ * @param color1 
+ * @param color2 
+ * @param speedWing 
+ * @param speedNose 
+ * @param speedFuse 
+ * @param speedTail 
+ * @param cylon (optional) If this is set, does back-and-forth effect. Regular chase otherwise.
+ */
 void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail, bool cylon=false);
 
-// Function: juggle
-// ----------------
-//   a few "pulses" of light that bounce back and forth at different timings
-//
-//   numPulses: how many unique pulses per string
-//   speed: how fast the pulses move back and forth
+/**
+ * @brief A few "pulses" of light that bounce back and forth at different timings
+ * 
+ * @param numPulses 
+ * @param speed 
+ */
 void juggle(uint8_t numPulses, uint8_t speed);
 
-// Function: navLights
-// -------------------
-//   main function that animates the persistent navlights
+/**
+ * @brief Main function that animates the persistent navlights
+ * 
+ */
 void navLights();
 
-// Function: strobe
-// ----------------
-//   various strobe patterns
-//
-//   style: which strobe style to use
-//     1: rapid strobing all LEDS in unison. bad. might cause seizures
-//     2: alternate strobing of left and right wing
-//     3: alternate double-blink strobing of left and right wing
+/**
+ * @brief Various strobe patters
+ * 
+ * @param style
+ * 1: Rapid strobing all LEDS in unison. Bad. Might cause seizures.
+ * 2: Alternate strobing of left and right wing.
+ * 3: Alternate double-blink strobing of left and right wing.
+ * 
+ * test
+ * 
+ * 
+ */
 void strobe(int style);
 
-// Function: altitude
-// ------------------
-//   altitude indicator show
-//   wings fill up to indicate altitude, tail goes green/red as variometer
-//
-//   fake: set to 0 for real data, anything else for testing
-//   palette: gradient palette for the visual variometer on the tail
-void altitude(double fake, const CRGBPalette16& palette);
+/**
+ * @brief Altitude indicator show. Wings fill up to indicate altitude, tail goes green/red as variometer.
+ * 
+ * @param palette 
+ * @param fake (optional) Defaults to 0 for real data, set to anything else for testing
+ */
+void altitude(const CRGBPalette16& palette, double fake=0);
 
-// Enum: twinkle
-// ----------------------------
-//   some named "states" for the twinkle functions
+/**
+ * @brief Some named states for the twinkle functions
+ * 
+ */
 enum {SteadyDim, Dimming, Brightening};
 
-// Function: doTwinkle1
-// --------------------
-//   helper function for the twinkle show
-//
-//   ledArray: pointer to the led array we're modifying
-//   pixelState: pointer to the array that holds state info for the led array
-//   size: size of the led array
+/**
+ * @brief Helper function for the twinkle show
+ * 
+ * @param ledArray Pointer to the led array we're modifying
+ * @param pixelState Pointer to the array that holds state info for the led array
+ * @param size Size of the led array
+ */
 void doTwinkle1(CRGB * ledArray, uint8_t * pixelState, uint8_t size);
 
-// Function: twinkle1
-// ----------------------------
-//   random twinkle effect on all LEDs
+/**
+ * @brief Random twinkle effect on all LEDs
+ * 
+ */
 void twinkle1();
 
-// Function: statusFlash overloads
-// -------------------------------
-//   various overload versions of the statusFlash function
-// void statusFlash(bool status);
-// void statusFlash(bool status, uint8_t numFlashes, int delay_time);
-// void statusFlash(char status);
-
-// Function: statusFlash
-// ---------------------
-//   flashes red/green/white for different program mode indicators
-//
-//   status: single char ('w', 'g', or 'r') that specifies what color to flassh all leds
-//   numFlashes: how many on/off cycles to do
-//   delay_time: delay after both the 'on' and 'off' states
+/**
+ * @brief Flashes red/green/white for different program mode indicators
+ * 
+ * @param status Single char ('w', 'g', or 'r') that specifies what color to flash all leds
+ * @param numFlashes How many on/off cycles to do
+ * @param delay_time Delay after both the 'on' and 'off' states
+ */
 void statusFlash(uint8_t status, uint8_t numFlashes=4, int delay_time=50);
