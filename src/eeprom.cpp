@@ -1,5 +1,6 @@
-#include "../LEDController.h"
+#include "../layout.h"
 #include "eeprom.h"
+
 #include "LED.h"
 
 #include <EEPROM.h>

@@ -1,4 +1,5 @@
 #include "../LEDController.h"
+#include "../layout.h"
 
 #include "LED.h"
 #include "patterns.h"
@@ -29,7 +30,6 @@ uint8_t prevShow;
 
 const uint8_t maxLeds = max(WING_LEDS, max((NOSE_LEDS+FUSE_LEDS), TAIL_LEDS));
 
-
 void stepShow() {
   #define caseshow(x,y) case x: y; break; // macro for switchcases with a built-in break
   
@@ -51,6 +51,9 @@ void stepShow() {
   }
 
   switch (switchShow) { // activeShowNumbers[] will look like {1, 4, 5, 9}, so this maps to actual show numbers
+    // make sure to update NUM_SHOWS_WITH_ALTITUDE in shows.h
+    // if adding or removing shows
+    
     caseshow(0,  blank()); // all off except for NAV lights, if enabled
     caseshow(1,  colorWave1(10, 10)); // regular rainbow
     caseshow(2,  colorWave1(0, 10)); // zero led offset, so the whole plane is a solid color rainbow
@@ -71,8 +74,8 @@ void stepShow() {
     caseshow(17, juggle(4, 8)); // multiple unique "pulses" of light bouncing back and forth, all with different colors
     caseshow(18, animateColor(USA, 4, 1)); // sweeps a palette across the whole plane
 
-    //altitude needs to be the last show so we can disable it if no BMP280 module is installed
-    caseshow(19, altitude(0, variometer)); // first parameter is for testing. 0 for real live data, set to another number for "fake" altitude
+    // altitude needs to be the last show so we can disable it if no BMP280 module is installed
+    caseshow(19, altitude(variometer)); // second parameter can be to another number for "fake" altitude
   }
   prevShow = currentShow;
 }
@@ -429,7 +432,9 @@ void strobe(int style) {
   FastLED.show();
 }
 
-void altitude(double fake, const CRGBPalette16& palette) {
+void altitude(const CRGBPalette16& palette, double fake=0) {
+#define METRIC_CONVERSION 3.3; // 3.3 to convert meters to feet. 1 for meters.
+
   static double prevAlt;
   static int avgVSpeed[] = {0,0,0,0};
 

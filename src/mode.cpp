@@ -3,6 +3,7 @@
 
 #include "shows.h"
 #include "eeprom.h"
+#include "pins.h"
 
 extern bool programMode;
 extern bool hasBMP280;
