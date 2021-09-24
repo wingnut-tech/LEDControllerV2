@@ -1,3 +1,14 @@
+## [v1.3.0] - 2021-09-24
+### New project name and structure
+Complete revamp of the whole project structure. The single giant .ino file has been split out into proper .cpp and .h files for better organization.
+
+The project has also been renamed from FT-Night-Radian-LED-Controller to simply LEDController. It's easier to type, and also represents the fact that the controller isn't exclusive to the FT Night Radian anymore.
+
+The existing FT-Night-Radian-LED-Controller repo will be left as-is, and archived with a notice to point people here. While we could have just renamed the old repo, the new project structure would break existing verions of the LEDControllerUpdater app.
+
+### Added
+- `LED_POWER` define for use in layout files. There's a difference in power draw between the Night Radian and the strips we're using for the kits, so this allows us to specify the power draw per LED to keep power usage in check.
+
 ## [v1.2.4] - 2021-09-02
 ### Changed
 - Auto-adjusting knob input range
