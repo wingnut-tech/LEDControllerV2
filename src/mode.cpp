@@ -135,4 +135,5 @@ void normal() {
   } else { // no buttons are being pressed
     programModeCounter = 0;
   }
+  progMillis = currentMillis;
 }
