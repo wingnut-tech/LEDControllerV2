@@ -99,7 +99,7 @@ void setup() {
   #  ifndef LED_POWER
   #    define MAX_BRIGHTNESS 255
   #  else
-  #    define MAX_POWER 1500 // mA
+  #    define MAX_POWER 1800 // mA
   #    define NUM_LEDS (WING_LEDS + WING_LEDS + NOSE_LEDS + FUSE_LEDS + TAIL_LEDS + TAIL_LEDS)
   #    define MAX_BRIGHTNESS min(255, (255 * (MAX_POWER / (NUM_LEDS * LED_POWER))))
   #  endif
