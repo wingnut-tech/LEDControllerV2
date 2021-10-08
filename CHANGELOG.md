@@ -1,3 +1,13 @@
+## [v1.3.1] - 2021-10-08
+### Added
+- Filtering on RC knob input. We're doing a simple average of a few samples to help clean up jittery RC signals.
+
+### Changed
+- The Orange solid color show now uses "DarkOrange" to help it not look so yellow.
+
+### Fixed
+- Lots of code optimizations to try and reduce program storage space on the Arduino. Streamlining code, simplifying functions, and removing old sections that are redundant or not in use anymore.
+
 ## [v1.3.0] - 2021-09-24
 ### New project name and structure
 Complete revamp of the whole project structure. The single giant .ino file has been split out into proper .cpp and .h files for better organization.
