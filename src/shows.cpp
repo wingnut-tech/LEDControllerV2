@@ -71,9 +71,9 @@ void stepShow() {
     caseshow(12, strobe(3), 50); // Realistic double strobe alternating between wings
     caseshow(13, strobe(2), 50); // Realistic landing-light style alternating between wings
     caseshow(14, strobe(1), 50); // unrealistic rapid strobe of all non-nav leds, good locator/identifier. also might cause seizures
-    caseshow(15, chase(CRGB::White, CRGB::Black, 50, 80, 35, 80), 10); // "chase" effect, with a white streak on a black background
+    caseshow(15, chase(CRGB::White, CRGB::Black, 50, 80, 35, 80), 10); // chase effect, with a white streak on a black background
     caseshow(16, chase(CRGB::Red, CRGB::Black, 30, 50, 30, 50, true), 10); // Night Rider/Cylon style red beam scanning back and forth
-    caseshow(17, juggle(4, 8), 10); // multiple unique "pulses" of light bouncing back and forth, all with different colors
+    caseshow(17, juggle(4, 8), 10); // multiple unique pulses of light bouncing back and forth, all with different colors
     caseshow(18, animateColor(USA, 4, 1), 20); // sweeps a palette across the whole plane
 
     // altitude needs to be the last show so we can disable it if no BMP280 module is installed
@@ -94,7 +94,7 @@ void setColor(const CRGB& color) {
 void setColor(const CRGBPalette16& palette) {
   for (int i = 0; i < maxLeds; i++) {
     // range of 0-240 is used in the map() function due to how the FastLED ColorFromPalette() function works.
-    // 240 is actually the correct "wrap-around" point
+    // 240 is actually the correct wrap-around point
     Right.set(i, ColorFromPalette(palette, map(i, 0, Right.stopPoint, 0, 240)));
     Left.set(i, ColorFromPalette(palette, map(i, 0, Left.stopPoint, 0, 240)));
     Tail.set(i, ColorFromPalette(palette, map(i, 0, TAIL_LEDS, 0, 240)));
@@ -104,33 +104,6 @@ void setColor(const CRGBPalette16& palette) {
       Nose.set(i, ColorFromPalette(palette, map(i, 0, NOSE_LEDS, 0, 240)));
       Fuse.set(i, ColorFromPalette(palette, map(i, 0, FUSE_LEDS, 0, 240)));
     }
-  }
-  FastLED.show();
-}
-
-CRGB LetterToColor(char letter) {
-  CRGB color;
-  switch (letter) {
-    case 'r': color = CRGB::Red;
-              break;
-    case 'g': color = CRGB::Green;
-              break;
-    case 'b': color = CRGB::Blue;
-              break;
-    case 'w': color = CRGB::White;
-              break;
-    case 'a': color = CRGB::AntiqueWhite;
-              break;
-    case 'o': color = CRGB::Black; // o = off
-              break;
-  }
-  return color;
-}
-
-void setPattern(char pattern[]) {
-  for (int i = 0; i < maxLeds; i++) {
-    Right.set(i, LetterToColor(pattern[i]));
-    Left.set(i, LetterToColor(pattern[i]));
   }
   FastLED.show();
 }
@@ -152,7 +125,7 @@ void setNoseFuse(uint8_t led, const CRGB& color, bool addor=false) {
 }
 
 void setBothWings(uint8_t led, const CRGB& color, bool addor=false) {
-  if (led < Left.stopPoint) { // less than left size, set left wing, but "reversed" (start at outside)
+  if (led < Left.stopPoint) { // less than left size, set left wing, but reversed (start at outside)
     if (addor) {
       Left.addor(Left.stopPoint - led - 1, color);
     } else {
@@ -170,7 +143,7 @@ void setBothWings(uint8_t led, const CRGB& color, bool addor=false) {
 void animateColor(const CRGBPalette16& palette, int ledOffset, int stepSize) {
   if (currentStep > 255) {currentStep -= 256;}
   for (uint8_t i = 0; i < maxLeds; i++) {
-    // scale to 240 again because that's the correct "wrap" point for ColorFromPalette()
+    // scale to 240 again because that's the correct wrap point for ColorFromPalette()
     CRGB color = ColorFromPalette(palette, scale8(triwave8((i * ledOffset) + currentStep), 240));
     Right.set(i, color);
     Left.set(i, color);
@@ -208,7 +181,7 @@ void colorWave1(uint8_t ledOffset) {
 }
 
 void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail, bool cylon=false) {
-  // fade out the whole string to get a nice fading "trail"
+  // fade out the whole string to get a nice fading trail
   if (color2 == (CRGB)CRGB::Black) { // if our second color is black, do nscale8, because lerp never gets there
     Right.nscale8(192);
     Left.nscale8(192);
@@ -234,7 +207,7 @@ void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t sp
       Fuse.set(scale8(triwave8(beat8(speedFuse)), FUSE_LEDS-1), color1);
     }
   } else {
-    // chase just goes "out" in the same directions
+    // chase just goes out in the same direction
     Right.set(scale8(beat8(speedWing), Right.stopPoint-1), color1);
     Left.set(scale8(beat8(speedWing), Left.stopPoint-1), color1);
     Tail.set(scale8(beat8(speedTail), TAIL_LEDS-1), color1);
@@ -252,7 +225,7 @@ void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t sp
 void juggle(uint8_t numPulses, uint8_t speed) {
   uint8_t spread = 256 / numPulses;
 
-  // fade out the whole string to get a nice fading "trail"
+  // fade out the whole string to get a nice fading trail
   Right.nscale8(192);
   Left.nscale8(192);
   Fuse.nscale8(192);
@@ -275,7 +248,7 @@ void juggle(uint8_t numPulses, uint8_t speed) {
 }
 
 void navLights() {
-static uint8_t navStrobeState = 0;
+  static uint8_t navStrobeState = 0;
   switch(navStrobeState) {
     case 50:
     case 51:
@@ -288,83 +261,68 @@ static uint8_t navStrobeState = 0;
     case 56:
       navStrobeState = 0;
     default:
-      // red/green
       Left.setNav(CRGB::Red);
       Right.setNav(CRGB::Green);
     break;
   }
+
   FastLED.show();
   navStrobeState++;
 }
 
 void strobe(int style) {
+  CRGB right, left, body, tail;
+  right = left = body = tail = CRGB::Black;
   switch(style) {
     case 1: // Rapid strobing all LEDS in unison
-      CRGB color;
       switch(currentStep) {
         case 0:
-            color = CRGB::White;
+          right = left = body = tail = CRGB::White;
         break;
         case 1:
-            color = CRGB::Black;
           currentStep = -1;
         break;
       }
-      fill_solid(Right.leds, Right.stopPoint, color);
-      fill_solid(Left.leds, Left.stopPoint, color);
-      fill_solid(Nose.leds, NOSE_LEDS, color);
-      fill_solid(Fuse.leds, FUSE_LEDS, color);
-      fill_solid(Tail.leds, TAIL_LEDS, color);
     break;
 
     case 2: // Alternate strobing of left and right wing
-      CRGB right, left, body;
-      switch (currentStep) {
-        case 0:
-            right = CRGB::White;
-            left = CRGB::Black;
-            body = CRGB::Blue;
-        break;
-        case 10:
-            right = CRGB::Black;
-            left = CRGB::White;
-            body = CRGB::Yellow;
-        break;
-        case 19:
-          currentStep = -1;
-        break;
+      tail = CRGB::White;
+      if (currentStep < 10) {
+        right = CRGB::White;
+        body = CRGB::Blue;
+      } else if (currentStep < 20) {
+        left = CRGB::White;
+        body = CRGB::Yellow;
       }
-      fill_solid(Right.leds, Right.stopPoint, right);
-      fill_solid(Left.leds, Left.stopPoint, left);
-      fill_solid(Nose.leds, NOSE_LEDS, body);
-      fill_solid(Fuse.leds, FUSE_LEDS, body);
-      fill_solid(Tail.leds, TAIL_LEDS, CRGB::White);
+      if (currentStep == 19) {
+        currentStep = -1;
+      }
     break;
+
     case 3: // alternate double-blink strobing of left and right wing
       switch(currentStep) {
         case 0:
         case 2:
-          fill_solid(Right.leds, Right.stopPoint, CRGB::White);
-          fill_solid(Left.leds, Left.stopPoint, CRGB::Black);
+          right = CRGB::White;
         break;
 
         case 13:
         case 15:
-          fill_solid(Right.leds, Right.stopPoint, CRGB::Black);
-          fill_solid(Left.leds, Left.stopPoint, CRGB::White);
+          left = CRGB::White;
         break;
 
         case 25:
           currentStep = -1;
         break;
-
-        default:
-          fill_solid(Right.leds, Right.stopPoint, CRGB::Black);
-          fill_solid(Left.leds, Left.stopPoint, CRGB::Black);
-        break;
       }
     break;
   }
+
+  fill_solid(Right.leds, Right.stopPoint, right);
+  fill_solid(Left.leds, Left.stopPoint, left);
+  fill_solid(Nose.leds, NOSE_LEDS, body);
+  fill_solid(Fuse.leds, FUSE_LEDS, body);
+  fill_solid(Tail.leds, TAIL_LEDS, tail);
 
   currentStep++;
   FastLED.show();
@@ -481,7 +439,7 @@ void doTwinkle1(CRGB * ledArray, uint8_t * pixelState, uint8_t size) {
 }
 
 void twinkle1() {
-  // arrays to hold the "state" of each LED of each strip
+  // arrays to hold the state of each LED of each strip
   static uint8_t pixelStateRight[WING_LEDS];
   static uint8_t pixelStateLeft[WING_LEDS];
   static uint8_t pixelStateNose[NOSE_LEDS];
@@ -522,22 +480,21 @@ void statusFlash(uint8_t status, uint8_t numFlashes, int delay_time) {
       color = CRGB::Red;
     break;
   }
-  for (int j = 0; j < numFlashes; j++) {
-    fill_solid(Right.leds, Right.stopPoint, color);
-    fill_solid(Left.leds, Left.stopPoint, color);
-    fill_solid(Nose.leds, NOSE_LEDS, color);
-    fill_solid(Fuse.leds, FUSE_LEDS, color);
-    fill_solid(Tail.leds, TAIL_LEDS, color);
-    digitalWrite(LED_BUILTIN, HIGH);
-    FastLED.show();
-    delay(delay_time);
 
-    fill_solid(Right.leds, Right.stopPoint, CRGB::Black);
-    fill_solid(Left.leds, Left.stopPoint, CRGB::Black);
-    fill_solid(Nose.leds, NOSE_LEDS, CRGB::Black);
-    fill_solid(Fuse.leds, FUSE_LEDS, CRGB::Black);
-    fill_solid(Tail.leds, TAIL_LEDS, CRGB::Black);
-    digitalWrite(LED_BUILTIN, LOW);
+  CRGB c;
+  for (int j = 0; j < numFlashes*2; j++) {
+    if ((j % 2) == 0) {
+      c = color;
+      digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+      c = CRGB::Black;
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+    fill_solid(Right.leds, WING_LEDS, c);
+    fill_solid(Left.leds, WING_LEDS, c);
+    fill_solid(Nose.leds, NOSE_LEDS, c);
+    fill_solid(Fuse.leds, FUSE_LEDS, c);
+    fill_solid(Tail.leds, TAIL_LEDS, c);
     FastLED.show();
     delay(delay_time);
   }

@@ -32,8 +32,7 @@ void program() {
     }
   } else { // button not pressed
     if (programModeCounter > 0 && programModeCounter < 1000) { // a momentary press to cycle to the next program
-      currentShow++;
-      if (currentShow == numShows) {currentShow = 0;}
+      currentShow = (currentShow + 1) % numShows;
     }
     programModeCounter = 0;
   }
@@ -64,7 +63,7 @@ void normal() {
   static uint8_t rcInputPort = EITHER; // which RC input port is plugged in? EITHER watches both 1 and 2, then switches to whichever gets a valid signal first
   static int pwmLow = 1100;
   static int pwmHigh = 1900;
-  static int pwmSmooth[] = {1500, 1500, 1500};
+  static int pwmSmooth[] = {pwmLow, pwmLow, pwmLow};
   
   int currentCh1 = 0;  // Receiver Channel PPM value
   int currentCh2 = 0;  // Receiver Channel PPM value
@@ -74,9 +73,11 @@ void normal() {
     currentCh1 = pulseIn(RC_PIN1, HIGH, 25000);  // (Pin, State, Timeout)
     if (currentCh1 > 700 && currentCh1 < 2400) { // do we have a valid signal?
       if (rcInputPort == EITHER) {
-        rcInputPort = KNOB; // if we were on "either" port mode, switch it to 1
+        rcInputPort = KNOB; // if we were on EITHER port mode, switch it to KNOB
         statusFlash('w', 1, 300); // flash white once for RC input 1
         statusFlash(hasBMP280, 1, 300); // indicate BMP280 module present
+        pwmSmooth[1] = currentCh1; // prime the needed elements
+        pwmSmooth[2] = currentCh1;
       }
       pwmSmooth[0] = pwmSmooth[1];
       pwmSmooth[1] = pwmSmooth[2];
@@ -95,18 +96,18 @@ void normal() {
     currentCh2 = pulseIn(RC_PIN2, HIGH, 25000);  // (Pin, State, Timeout)
     if (currentCh2 > 700 && currentCh2 < 2400) { // valid signal?
       if (rcInputPort == EITHER) {
-        rcInputPort = SWITCH; // if we were on "either" port mode, switch it to 2
+        rcInputPort = SWITCH; // if we were on EITHER port mode, switch it to SWITCH
         statusFlash('w', 2, 300); // flash white twice for RC input 2
         statusFlash(hasBMP280, 1, 300); // indicate BMP280 module present
       }
       if (currentCh2 > 1500) {
-        // switch is "up" (above 1500), auto-scroll through shows
+        // switch is up (above 1500), auto-scroll through shows
         if (currentMillis - prevAutoMillis > 2000) { // auto-advance after 2 seconds
           currentShow += 1;
           prevAutoMillis = currentMillis;
         }
-      } else { // switch is "down" (below 1500), stop autoscrolling, reset timer
-        prevAutoMillis = currentMillis - 1995; // this keeps the the auto-advance timer constantly "primed", so when flipping the switch again, it advances right away
+      } else { // switch is down (below 1500), stop autoscrolling, reset timer
+        prevAutoMillis = currentMillis - 1995; // this keeps the the auto-advance timer constantly primed, so when flipping the switch again, it advances right away
       }
     }
   }

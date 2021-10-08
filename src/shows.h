@@ -26,21 +26,6 @@ void setColor(const CRGB& color);
 void setColor (const CRGBPalette16& palette);
 
 /**
- * @brief Convert the letters in static patterns to color values
- * 
- * @param letter 
- * @return CRGB 
- */
-CRGB LetterToColor (char letter);
-
-/**
- * @brief Sets wings to a static pattern
- * 
- * @param pattern 
- */
-void setPattern (char pattern[]);
-
-/**
  * @brief Sets LEDs along nose and fuse as if they were the same strip. Range is 0 - ((NOSE_LEDS+FUSE_LEDS)-1).
  * 
  * @param led 
@@ -71,7 +56,6 @@ void animateColor (const CRGBPalette16& palette, int ledOffset, int stepSize);
  * @brief Rainbow pattern
  * 
  * @param ledOffset 
- * @param l_interval 
  */
 void colorWave1 (uint8_t ledOffset);
 
@@ -89,7 +73,7 @@ void colorWave1 (uint8_t ledOffset);
 void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail, bool cylon=false);
 
 /**
- * @brief A few "pulses" of light that bounce back and forth at different timings
+ * @brief A few pulses of light that bounce back and forth at different timings
  * 
  * @param numPulses 
  * @param speed 
