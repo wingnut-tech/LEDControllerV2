@@ -8,6 +8,10 @@
    The wings/fuse fill up to half this value, then "overflow" a red/orange color. */
 #define MAX_ALTIMETER 800
 
+/* Uncomment to print out current altitude stats over serial.
+   Uses an extra ~250 bytes for the print statements, especially for the float variable */
+// #define DEBUG_ALTITUDE
+
 /* Uncomment to override RC signal and force a specific show number for testing */
 // #define TESTMODE 0
 

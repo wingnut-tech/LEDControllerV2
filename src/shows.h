@@ -11,14 +11,6 @@
  */
 void stepShow();
 
-// Function: blank
-// ---------------
-/**
- * @brief Turn off all LEDs
- * 
- */
-void blank();
-
 /**
  * @brief Sets all LEDs to a solid color
  * 
@@ -32,27 +24,6 @@ void setColor(const CRGB& color);
  * @param palette 
  */
 void setColor (const CRGBPalette16& palette);
-
-/**
- * @brief Convert the letters in static patterns to color values
- * 
- * @param letter 
- * @return CRGB 
- */
-CRGB LetterToColor (char letter);
-
-/**
- * @brief Sets wings to a static pattern
- * 
- * @param pattern 
- */
-void setPattern (char pattern[]);
-
-/**
- * @brief Set all LEDs to the static init pattern
- * 
- */
-void setInitPattern ();
 
 /**
  * @brief Sets LEDs along nose and fuse as if they were the same strip. Range is 0 - ((NOSE_LEDS+FUSE_LEDS)-1).
@@ -85,9 +56,8 @@ void animateColor (const CRGBPalette16& palette, int ledOffset, int stepSize);
  * @brief Rainbow pattern
  * 
  * @param ledOffset 
- * @param l_interval 
  */
-void colorWave1 (uint8_t ledOffset, uint8_t l_interval);
+void colorWave1 (uint8_t ledOffset);
 
 /**
  * @brief LED chase functions with fadeout of the tail. Can do more traditional same-direction chase, or back-and-forth "cylon/knight-rider" style.
@@ -103,7 +73,7 @@ void colorWave1 (uint8_t ledOffset, uint8_t l_interval);
 void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail, bool cylon=false);
 
 /**
- * @brief A few "pulses" of light that bounce back and forth at different timings
+ * @brief A few pulses of light that bounce back and forth at different timings
  * 
  * @param numPulses 
  * @param speed 
@@ -137,12 +107,6 @@ void strobe(int style);
  * @param fake (optional) Defaults to 0 for real data, set to anything else for testing
  */
 void altitude(const CRGBPalette16& palette, double fake=0);
-
-/**
- * @brief Some named states for the twinkle functions
- * 
- */
-enum {SteadyDim, Dimming, Brightening};
 
 /**
  * @brief Helper function for the twinkle show
