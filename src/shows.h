@@ -11,14 +11,6 @@
  */
 void stepShow();
 
-// Function: blank
-// ---------------
-/**
- * @brief Turn off all LEDs
- * 
- */
-void blank();
-
 /**
  * @brief Sets all LEDs to a solid color
  * 
@@ -47,12 +39,6 @@ CRGB LetterToColor (char letter);
  * @param pattern 
  */
 void setPattern (char pattern[]);
-
-/**
- * @brief Set all LEDs to the static init pattern
- * 
- */
-void setInitPattern ();
 
 /**
  * @brief Sets LEDs along nose and fuse as if they were the same strip. Range is 0 - ((NOSE_LEDS+FUSE_LEDS)-1).
@@ -87,7 +73,7 @@ void animateColor (const CRGBPalette16& palette, int ledOffset, int stepSize);
  * @param ledOffset 
  * @param l_interval 
  */
-void colorWave1 (uint8_t ledOffset, uint8_t l_interval);
+void colorWave1 (uint8_t ledOffset);
 
 /**
  * @brief LED chase functions with fadeout of the tail. Can do more traditional same-direction chase, or back-and-forth "cylon/knight-rider" style.
@@ -137,12 +123,6 @@ void strobe(int style);
  * @param fake (optional) Defaults to 0 for real data, set to anything else for testing
  */
 void altitude(const CRGBPalette16& palette, double fake=0);
-
-/**
- * @brief Some named states for the twinkle functions
- * 
- */
-enum {SteadyDim, Dimming, Brightening};
 
 /**
  * @brief Helper function for the twinkle show

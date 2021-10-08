@@ -57,38 +57,45 @@ void program() {
   progMillis = currentMillis;
 }
 
+enum { EITHER, KNOB, SWITCH, };
+
 void normal() {
   static unsigned long prevAutoMillis = 0;
-  static uint8_t rcInputPort = 0; // which RC input port is plugged in? 0 watches both 1 and 2, until either one gets a valid signal. then this gets set to that number
+  static uint8_t rcInputPort = EITHER; // which RC input port is plugged in? EITHER watches both 1 and 2, then switches to whichever gets a valid signal first
   static int pwmLow = 1100;
   static int pwmHigh = 1900;
+  static int pwmSmooth[] = {1500, 1500, 1500};
   
   int currentCh1 = 0;  // Receiver Channel PPM value
   int currentCh2 = 0;  // Receiver Channel PPM value
 
 #ifndef TESTMODE // if TESTMODE isn't defined, read the RC signal
-  if (rcInputPort == 0 || rcInputPort == 1) { // if rcInputPort == 0, check both rc input pins until we get a valid signal on one
+  if (rcInputPort == EITHER || rcInputPort == KNOB) { // if rcInputPort == EITHER, check both rc input pins until we get a valid signal on one
     currentCh1 = pulseIn(RC_PIN1, HIGH, 25000);  // (Pin, State, Timeout)
     if (currentCh1 > 700 && currentCh1 < 2400) { // do we have a valid signal?
+      if (rcInputPort == EITHER) {
+        rcInputPort = KNOB; // if we were on "either" port mode, switch it to 1
+        statusFlash('w', 1, 300); // flash white once for RC input 1
+        statusFlash(hasBMP280, 1, 300); // indicate BMP280 module present
+      }
+      pwmSmooth[0] = pwmSmooth[1];
+      pwmSmooth[1] = pwmSmooth[2];
+      pwmSmooth[2] = currentCh1;
+      currentCh1 = (pwmSmooth[0]+pwmSmooth[1]+pwmSmooth[2])/3; // average out the RC signal to clean it up a bit
       if (currentCh1 > pwmHigh) {
         pwmHigh = currentCh1;
       }
       if (currentCh1 < pwmLow) {
         pwmLow = currentCh1;
       }
-      if (rcInputPort == 0) {
-        rcInputPort = 1; // if we were on "either" port mode, switch it to 1
-        statusFlash('w', 1, 300); // flash white once for RC input 1
-        statusFlash(hasBMP280, 1, 300); // indicate BMP280 module present
-      }
       currentShow = map(currentCh1, pwmLow, pwmHigh+1, 0, numActiveShows); // map the input. this logic should cause slices to be equal, without going over numActiveShows
     }
   }
-  if (rcInputPort == 0 || rcInputPort == 2) { // RC_PIN2 is our 2-position-switch autoscroll mode
+  if (rcInputPort == EITHER || rcInputPort == SWITCH) { // RC_PIN2 is our 2-position-switch autoscroll mode
     currentCh2 = pulseIn(RC_PIN2, HIGH, 25000);  // (Pin, State, Timeout)
     if (currentCh2 > 700 && currentCh2 < 2400) { // valid signal?
-      if (rcInputPort == 0) {
-        rcInputPort = 2; // if we were on "either" port mode, switch it to 2
+      if (rcInputPort == EITHER) {
+        rcInputPort = SWITCH; // if we were on "either" port mode, switch it to 2
         statusFlash('w', 2, 300); // flash white twice for RC input 2
         statusFlash(hasBMP280, 1, 300); // indicate BMP280 module present
       }
@@ -103,7 +110,7 @@ void normal() {
       }
     }
   }
-  if (rcInputPort == 0) {
+  if (rcInputPort == EITHER) {
     statusFlash('r', 1, 300); // flash red to indicate no signal
   }
   currentShow = currentShow % numActiveShows; // keep currentShow within the limits of our active shows

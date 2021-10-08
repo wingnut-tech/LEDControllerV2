@@ -25,7 +25,7 @@ uint8_t numActiveShows = numShows; // how many actual active shows
 uint8_t activeShowNumbers[NUM_SHOWS_WITH_ALTITUDE]; // our array of currently active show switchcase numbers
 
 bool programMode = false; // are we in program mode?
-int interval; // delay time between each "frame" of an animation
+int interval = 20; // delay time between each "frame" of an animation
 unsigned long currentMillis = millis();
 int currentStep = 0; // this is just a global general-purpose counter variable that any show can use for whatever it needs
 
@@ -74,8 +74,12 @@ void setup() {
 
     basePressure = bmp.readPressure()/100; // this gets the current pressure at "ground level," so we can get relative altitude
 
-    Serial.print(F("Base Pressure: "));
+    #ifdef DEBUG_ALTITUDE
+    Serial.print(F("Base pressure: "))
     Serial.println(basePressure);
+    #else
+    Serial.println(F("Got base pressure"));
+    #endif
   } else { // no BMP280 module installed
     Serial.println(F("No BMP280 module found. Disabling altitude() function."));
     numShows = NUM_SHOWS_WITH_ALTITUDE - 1;
@@ -115,14 +119,8 @@ void setup() {
  * 
  */
 void loop() {
-  static bool firstrun = true;
   static unsigned long prevMillis = 0; // keeps track of last millis value for regular show timing
   static unsigned long prevNavMillis = 0; // keeps track of last millis value for the navlights
-
-  if (firstrun) {
-    setInitPattern(); // Set the LED strings to their boot-up configuration
-    firstrun = false;
-  }
 
   // The timing control for calling each "frame" of the different animations
   currentMillis = millis();
