@@ -2,12 +2,8 @@ name: Build and release
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - '**.ino'
-      - '**.cpp'
-      - '**.h'
+    tags:
+      - "v*.*.*"
   pull_request:
     paths:
       - '**.ino'
