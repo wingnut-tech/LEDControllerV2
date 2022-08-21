@@ -1,3 +1,8 @@
+## [v1.4.0] - 2022-08-21
+Support for BME280 chips on new v2 boards has been added. Now the firmware will detect either chip and use it correctly.
+
+This will be the minimum version that the new boards will fully work with, because of the new pressure chip.
+
 ## [v1.3.1] - 2021-10-08
 ### Added
 - Filtering on RC knob input. We're doing a simple average of a few samples to help clean up jittery RC signals.
