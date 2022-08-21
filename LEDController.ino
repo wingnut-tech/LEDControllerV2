@@ -1,8 +1,8 @@
 /*
  * Wingnut Tech LED Controller
  * 
- * VERSION: 1.3.1
- * DATE:    2021-10-08
+ * VERSION: 1.4.0
+ * DATE:    2022-08-21
  * 
  */
 
@@ -19,6 +19,9 @@
 #include <FastLED.h>
 #include <Adafruit_BMP280.h>
 
+#define BMP280_ADDRESS (0x76)
+#define BMP280_CHIPID  (0x58)
+#define BME280_CHIPID  (0x60)
 
 uint8_t numShows = NUM_SHOWS_WITH_ALTITUDE; // numShows becomes 1 less if no BMP280 module is installed
 uint8_t numActiveShows = numShows; // how many actual active shows
@@ -63,8 +66,13 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  if (bmp.begin(0x76)) { // initialize the altitude pressure sensor with I2C address 0x76
+  if (bmp.begin(BMP280_ADDRESS, BMP280_CHIPID)) { // attempt to init bmp module with BMP280 chip ID
     hasBMP280 = true;
+  } else if (bmp.begin(BMP280_ADDRESS, BME280_CHIPID)) { // otherwise, try BME280 chip ID
+    hasBMP280 = true;
+  }
+
+  if (hasBMP280) {
     Serial.println(F("BMP280 module found."));
     bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
                     Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
@@ -72,7 +80,7 @@ void setup() {
                     Adafruit_BMP280::FILTER_X4,       /* Filtering. */
                     Adafruit_BMP280::STANDBY_MS_63);  /* Standby time. */
 
-    basePressure = bmp.readPressure()/100; // this gets the current pressure at "ground level," so we can get relative altitude
+    basePressure = bmp.readPressure()/100; // this gets the current pressure at ground level, so we can get relative altitude
 
     #ifdef DEBUG_ALTITUDE
     Serial.print(F("Base pressure: "))
