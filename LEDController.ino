@@ -1,8 +1,8 @@
 /*
  * Wingnut Tech LED Controller
  * 
- * VERSION: 1.4.0
- * DATE:    2022-08-21
+ * VERSION: 1.4.1
+ * DATE:    2022-09-02
  * 
  */
 
@@ -111,9 +111,9 @@ void setup() {
   #  ifndef LED_POWER
   #    define MAX_BRIGHTNESS 255
   #  else
-  #    define MAX_POWER 1800 // mA
+  #    define MAX_POWER 1800UL // mA
   #    define NUM_LEDS (WING_LEDS + WING_LEDS + NOSE_LEDS + FUSE_LEDS + TAIL_LEDS + TAIL_LEDS)
-  #    define MAX_BRIGHTNESS min(255, (255 * (MAX_POWER / (NUM_LEDS * LED_POWER))))
+  #    define MAX_BRIGHTNESS min(255, (255 * MAX_POWER) / (NUM_LEDS * LED_POWER))
   #  endif
   #else
   #  define MAX_BRIGHTNESS TMP_BRIGHTNESS

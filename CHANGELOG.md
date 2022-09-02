@@ -1,3 +1,7 @@
+## [v1.4.1] - 2022-09-02
+### Fixed
+- The MAX_BRIGHTNESS code wasn't working due to implicit integer/float issues, causing custom layouts that specified the LED_POWER to end up with a brightness of 0.
+
 ## [v1.4.0] - 2022-08-21
 Support for BME280 chips on new v2 boards has been added. Now the firmware will detect either chip and use it correctly.
 
