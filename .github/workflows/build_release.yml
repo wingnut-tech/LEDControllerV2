@@ -1,14 +1,6 @@
 name: Build and release
 
-on:
-  push:
-    tags:
-      - "v*.*.*"
-  pull_request:
-    paths:
-      - '**.ino'
-      - '**.cpp'
-      - '**.h'
+on: push
 
 jobs:
   build:
@@ -35,20 +27,44 @@ jobs:
           name: build
           path: build
 
-  release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-
+  check_version:
     runs-on: ubuntu-latest
     steps:
+      - name: Chackout
+        uses: actions/checkout@v2
+
+      - name: Check version
+        run: |
+              git fetch --tags
+              file_ver=$(awk '/VERSION:/ {print $3}' LEDController.ino)
+              ch_ver=$(awk -F'[][]' '/\[v[0-9.]+\]/ {print $2; exit}' CHANGELOG.md)
+              git_vers=$(git describe --tags --always $(git rev-list --tags))
+
+              echo "Latest git tag:    ${git_vers%%$'\n'*}"
+              echo "File version:      ${file_ver}"
+              echo "Changelog version: ${ch_ver}"
+
+              if [[ $file_ver != $ch_ver || $git_vers =~ $file_ver ]]; then echo "Version issue!"; exit 1; fi
+
+  release:
+    needs: [build, check_version]
+    if: ${{ github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+
+    steps:
       - uses: actions/checkout@v2
+
       - uses: actions/download-artifact@v2
 
       - name: Generate changelog
         run: awk '/^## / {if (p) {exit}; {p=1}} p' CHANGELOG.md > latest-CHANGELOG.md
 
+      - name: Get version
+        run: echo "version=$(awk '/VERSION:/ {print $3}' LEDController.ino)" >> $GITHUB_ENV
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ env.version }}
           body_path: latest-CHANGELOG.md
           files: build/*
