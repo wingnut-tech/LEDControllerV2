@@ -17,4 +17,9 @@
 #define NOSE_FUSE_JOINED true // are the nose and fuse strings joined?
 #define WING_NAV_LEDS 8 // wing LEDs that are navlights
 
+// mA per LED. for the Radian, 18 makes it run at full brightness
 #define LED_POWER 18
+
+// MAX_POWER and LED_POWER are used together to calculate the max brightness.
+// uncomment if you need a lower limit (eg. a smaller battery):
+//#define MAX_POWER 1800
