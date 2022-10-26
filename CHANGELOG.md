@@ -1,3 +1,10 @@
+## [v1.4.2] - 2022-10-26
+### Fixed
+- Added fallback LED_POWER value so there's always some max power regulation, even if LED_POWER wasn't specified in the layout.h file.
+
+### Changed
+- A few Github workflow tweaks
+
 ## [v1.4.1] - 2022-09-02
 ### Fixed
 - The MAX_BRIGHTNESS code wasn't working due to implicit integer/float issues, causing custom layouts that specified the LED_POWER to end up with a brightness of 0.

@@ -1,8 +1,8 @@
 /*
  * Wingnut Tech LED Controller
  * 
- * VERSION: 1.4.1
- * DATE:    2022-09-02
+ * VERSION: v1.4.2
+ * DATE:    2022-10-26
  * 
  */
 
@@ -106,18 +106,21 @@ void setup() {
   FastLED.addLeds<NEOPIXEL, TAIL_PIN>(Tail.leds, TAIL_LEDS);
 
   // LED power calculations
-  // there's a difference between stock radian LEDs and the ones we're selling in kits
   #ifndef TMP_BRIGHTNESS
   #  ifndef LED_POWER
-  #    define MAX_BRIGHTNESS 255
-  #  else
-  #    define MAX_POWER 1800UL // mA
-  #    define NUM_LEDS (WING_LEDS + WING_LEDS + NOSE_LEDS + FUSE_LEDS + TAIL_LEDS + TAIL_LEDS)
-  #    define MAX_BRIGHTNESS min(255, (255 * MAX_POWER) / (NUM_LEDS * LED_POWER))
+  #    define LED_POWER 20 // set a sane fallback
   #  endif
+  #  ifndef MAX_POWER
+  #    define MAX_POWER 1800 // mA
+  #  endif
+  #  define NUM_LEDS (WING_LEDS + WING_LEDS + NOSE_LEDS + FUSE_LEDS + TAIL_LEDS + TAIL_LEDS)
+  #  define MAX_BRIGHTNESS min(255, (255 * (unsigned long)MAX_POWER) / (NUM_LEDS * LED_POWER))
   #else
   #  define MAX_BRIGHTNESS TMP_BRIGHTNESS
   #endif
+  Serial.print(F("Max brightness: "));
+  Serial.print(MAX_BRIGHTNESS);
+  Serial.println(F("/255"));
 
   FastLED.setBrightness(MAX_BRIGHTNESS);
 }

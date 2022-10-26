@@ -5,41 +5,19 @@ version=$(sed -nE "s/.*VERSION: (.*)/\1/p" LEDController.ino)
 mkdir -p build
 mkdir -p _buildcache
 
-build() {
-  if [[ ${2} == "" ]]; then
-    layoutname=$(basename ${1} .h)
-  else
-    layoutname=${2}
-  fi
-  outname=${layoutname}_v${version}.hex
-  cachedir=_buildcache/${layoutname}
+mv layout.h layout.h.orig
 
-  mkdir -p ${cachedir}
+for file in layouts/*.h; do
+  layoutname=$(basename ${file} .h)
+  outname=${layoutname}_${version}.hex
 
-  cp ${1}              ${cachedir}/layout.h
-  cp LEDController.ino ${cachedir}/${layoutname}.ino
-  cp LEDController.h   ${cachedir}/
-  cp -r src            ${cachedir}/
-  
+  echo "----------------- ${layoutname} -----------------"
+  cp $file layout.h
+  arduino-cli compile --fqbn arduino:avr:nano --output-dir _buildcache
+  mv _buildcache/LEDController.ino.hex build/${outname}
+  echo -e "------------------${layoutname//?/-}------------------\n\n"
+done
 
-  echo "Queueing up ${layoutname}..."
+mv layout.h.orig layout.h
 
-  out=$(
-    cd ${cachedir}
-    arduino-cli compile --fqbn arduino:avr:nano --output-dir _build
-    mv _build/${layoutname}.ino.hex ../../build/${outname}
-  )
-
-  echo -e "--- ${layoutname} ---\n${out}\n\n"
-}
-
-if [[ $1 != "--all" ]]; then
-  build layout.h default
-else
-  for file in layouts/*.h; do
-    build $file &
-  done
-fi
-
-wait
 rm -rf _buildcache
