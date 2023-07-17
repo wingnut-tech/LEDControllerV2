@@ -1,0 +1,8 @@
+[submodule "libraries/FastLED"]
+	path = libraries/FastLED
+	url = https://github.com/FastLED/FastLED.git
+	branch = master
+[submodule "libraries/ErriezBMX280"]
+	path = libraries/ErriezBMX280
+	url = https://github.com/Erriez/ErriezBMX280.git
+	branch = master

@@ -1,3 +1,19 @@
+## [v2.0.0] - 2023-07-17
+### New v2 codebase
+This one has been a long time in the making. We've released our "v2" LED Controller board running an [RP2040](https://www.raspberrypi.com/products/rp2040/specifications/) processor. This chip is more powerful and more readily available (translation: still being manufactured) than the old Atmega 328P we used on the original boards. This is going to allow more functionality down the road and will be easier to maintain.
+
+However in developing for the new chip, I realized that a lot of my improvements would still work on the v1 Atmega boards, just with some slight tweaks. So with a bit of cleanup and some strategic checks throughout the code, I'm able to maintain a single codebase for both boards.
+
+### Changed
+- Improved RC input handling.
+  - v2 board uses one core on the RP2040 to read the RC input, so the other core can just focus on running the show
+  - v1 board does shorter PWM checks more often, even if it misses some here and there, allowing for more correct show frame timing
+- Added some hysteresis to the knob RC input. When scrolling into a new show, it takes more scrolling to get back out of it, which helps eliminate flickering on boundaries of neighboring shows
+- The "no signal" red flashing doesn't block anymore, so things are way more responsive
+- Layout info is now stored at the end of flash memory. This allows for easy changing of layouts without having to recompile the code, by just adding some data to the end of the compiled .uf2/.hex firmware files, making the web-based [Configurator](https://wingnut-tech.github.io/LEDControllerConfigurator/) possible
+- Better serial interface. Gives more info, can be controlled with keyboard input, etc.
+- Lots of other tweaks and improvements
+
 ## [v1.4.2] - 2022-10-26
 ### Fixed
 - Added fallback LED_POWER value so there's always some max power regulation, even if LED_POWER wasn't specified in the layout.h file.

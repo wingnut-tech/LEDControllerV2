@@ -1,22 +1,36 @@
 # FT Night Radian LED Controller
 
-BMP280 library from <https://github.com/adafruit/Adafruit_BMP280_Library> (v2.3.0)  
-FastLED library from <https://github.com/FastLED/FastLED> (v3.4.0)  
+## Configuration:
 
-## Installation
-The easiest way to install this firmware is to use the [LEDController Updater](https://github.com/reyemxela/LEDControllerUpdater) app.  
-Just download the latest [release](https://github.com/reyemxela/LEDControllerUpdater/releases).
+The firmware comes set up for the FT Night Radian by default. If you have a different layout of LED strips, you can use the [LED Controller Configurator](https://wingnuttech.github.io/LEDControllerConfigurator/) to create a new layout.
 
-## Manual installation
-- Install the latest version of the [Arduino IDE](https://www.arduino.cc/en/main/software)
-- Install the above specified versions of the **Adafruit BMP280** and **FastLED** libraries using the Library Manager in the Arduino IDE
-- On Windows, you might need to install the [CH340G drivers](https://github.com/reyemxela/LEDControllerUpdater/releases/download/v1.0.0/CH34x_Install_Windows_v3_4.zip) for the Arduino Nano
-- Download/clone this repository, unzip if needed
-  - If you downloaded the zip file from Github, you'll probably need to rename the folder. It should be named "LEDController" to match the .ino file.
-- Connect the LED Controller to your computer with a USB cable
-- In the Arduino IDE, make sure the Board Type is set to "Arduino Nano" and the Port is set to the correct serial port
-- Depending on the controller board you have, the "Processor" selection can vary:
-  - New v2 boards and some older boards: **"Atmega328P"**
-  - Most older boards: **"Atmega328P (Old Bootloader)"**
-  - If you have an older board and it won't flash, try the other processor type
-- Upload the code to the Arduino!
+After configuring, you can download the whole firmware plus config, or just the config to apply to an already-flashed board (assuming the flashed firmware is a compatible version).
+
+Note: v2 boards allow configuring both the layout and the enabled/disabled shows directly from the configurator page. v1 boards only allow layout configuration. You can still enable/disable shows on both boards using the buttons.
+
+---
+
+## Flashing:
+
+### v2 boards:
+- Download the .uf2 file (from the latest [release](https://github.com/wingnut-tech/LEDController/releases), or from the configurator page)
+- Hold down the "Boot" button on the board while plugging it in to your computer via USB
+- Drag-and-drop or copy/paste the .uf2 file into the "RPI-RP2" drive that shows up
+
+
+### v1 boards:
+- Download the .hex file (from the latest [release](https://github.com/wingnut-tech/LEDController/releases), or from the configurator page)
+- Download and run the [HEX Flasher](https://github.com/wingnut-tech/haxflasher) to upload the .hex file to your board
+
+---
+
+## Libraries used
+
+BMX280 library from <https://github.com/Erriez/ErriezBMX280> (v1.0.1)  
+FastLED library from <https://github.com/FastLED/FastLED> (v3.6.0)  
+
+---
+
+
+
+

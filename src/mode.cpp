@@ -1,147 +1,177 @@
-#include "../LEDController.h"
 #include "mode.h"
 
+#include "../LEDController.h"
+#include "LED.h"
 #include "shows.h"
 #include "eeprom.h"
 #include "pins.h"
+#include "button.h"
+#include "input.h"
 
-extern bool programMode;
-extern bool hasBMP280;
-extern uint8_t currentShow;
-extern uint8_t numShows;
-extern uint8_t numActiveShows;
-extern long currentMillis;
+bool programMode = false;
+bool visualizeMode = false;
+bool haveSignal = false;
 
-extern Settings settings;
+static Button enableBtn = Button(PROGRAM_ENABLE_BTN);
+static Button cycleBtn = Button(PROGRAM_CYCLE_BTN);
 
-unsigned long progMillis = 0; // keeps track of last millis value for button presses
-int programModeCounter = 0;
-int enableCounter = 0;
+static uint16_t pwmLow = 1100;
+static uint16_t pwmHigh = 1900;
+static uint8_t showStep = (pwmHigh - pwmLow) / numActiveShows;
+static uint8_t showThresh = showStep >> 2;
 
-void program() {
-  // Are we exiting program mode?
-  if (digitalRead(PROGRAM_CYCLE_BTN) == LOW) { // we're in program mode. is the Program/Cycle button pressed?
-    programModeCounter = programModeCounter + (currentMillis - progMillis); // increment the counter by how many milliseconds have passed
-    if (programModeCounter > 3000) { // Has the button been held down for 3 seconds?
-      programMode = false;
-      Serial.println(F("Exiting program mode"));
-      // store current program values into eeprom
-      saveSettings();
-      programModeCounter = 0;
-      statusFlash('w'); //strobe the leds to indicate leaving program mode
-    }
-  } else { // button not pressed
-    if (programModeCounter > 0 && programModeCounter < 1000) { // a momentary press to cycle to the next program
-      currentShow = (currentShow + 1) % numShows;
-    }
-    programModeCounter = 0;
-  }
+
+void currentMode() {
+  static unsigned long prevMillis = 0;
+  static unsigned long prevNavMillis = 0;
   
-  if (digitalRead(PROGRAM_ENABLE_BTN) == LOW) { // we're in program mode. is the Program Enable/Disable button pressed?
-    enableCounter = enableCounter + (currentMillis - progMillis); // increment the counter by how many milliseconds have passed
-  } else { // button not pressed
-    if (enableCounter > 0 && enableCounter < 1000) { // momentary press to toggle the current show
-      // toggle the state of the current program on/off
-      if (settings.enabledShows[currentShow] == true) {
-        settings.enabledShows[currentShow] = false;
-        Serial.println(F("disabled"));
-      } else {
-        settings.enabledShows[currentShow] = true;
-        Serial.println(F("enabled"));
-      }
-      statusFlash(settings.enabledShows[currentShow]);
-    }
-    enableCounter = 0;
+  enableBtn.loop();
+  cycleBtn.loop();
+
+  if (programMode) {
+    program();
+  } else {
+    normal();
   }
-  progMillis = currentMillis;
+
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - prevMillis > interval) {
+    prevMillis = currentMillis;
+    stepShow();
+  }
+
+  if (currentMillis - prevNavMillis > 30) {
+    navLights();
+    prevNavMillis = currentMillis;
+  }
 }
 
-enum { EITHER, KNOB, SWITCH, };
+
+void program() {
+  int cyclePress = cycleBtn.getPress();
+  if (cyclePress == LONG) {
+    exitProgramMode();
+  } else if (cyclePress == SHORT) {
+    goNextShow();
+  }
+
+  int enablePress = enableBtn.getPress();
+  if (enablePress == SHORT) {
+    toggleShow();
+  }
+}
+
 
 void normal() {
-  static unsigned long prevAutoMillis = 0;
-  static uint8_t rcInputPort = EITHER; // which RC input port is plugged in? EITHER watches both 1 and 2, then switches to whichever gets a valid signal first
-  static int pwmLow = 1100;
-  static int pwmHigh = 1900;
-  static int pwmSmooth[] = {pwmLow, pwmLow, pwmLow};
-  
-  int currentCh1 = 0;  // Receiver Channel PPM value
-  int currentCh2 = 0;  // Receiver Channel PPM value
-
-#ifndef TESTMODE // if TESTMODE isn't defined, read the RC signal
-  if (rcInputPort == EITHER || rcInputPort == KNOB) { // if rcInputPort == EITHER, check both rc input pins until we get a valid signal on one
-    currentCh1 = pulseIn(RC_PIN1, HIGH, 25000);  // (Pin, State, Timeout)
-    if (currentCh1 > 700 && currentCh1 < 2400) { // do we have a valid signal?
-      if (rcInputPort == EITHER) {
-        rcInputPort = KNOB; // if we were on EITHER port mode, switch it to KNOB
-        statusFlash('w', 1, 300); // flash white once for RC input 1
-        statusFlash(hasBMP280, 1, 300); // indicate BMP280 module present
-        pwmSmooth[1] = currentCh1; // prime the needed elements
-        pwmSmooth[2] = currentCh1;
-      }
-      pwmSmooth[0] = pwmSmooth[1];
-      pwmSmooth[1] = pwmSmooth[2];
-      pwmSmooth[2] = currentCh1;
-      currentCh1 = (pwmSmooth[0]+pwmSmooth[1]+pwmSmooth[2])/3; // average out the RC signal to clean it up a bit
-      if (currentCh1 > pwmHigh) {
-        pwmHigh = currentCh1;
-      }
-      if (currentCh1 < pwmLow) {
-        pwmLow = currentCh1;
-      }
-      currentShow = map(currentCh1, pwmLow, pwmHigh+1, 0, numActiveShows); // map the input. this logic should cause slices to be equal, without going over numActiveShows
-    }
-  }
-  if (rcInputPort == EITHER || rcInputPort == SWITCH) { // RC_PIN2 is our 2-position-switch autoscroll mode
-    currentCh2 = pulseIn(RC_PIN2, HIGH, 25000);  // (Pin, State, Timeout)
-    if (currentCh2 > 700 && currentCh2 < 2400) { // valid signal?
-      if (rcInputPort == EITHER) {
-        rcInputPort = SWITCH; // if we were on EITHER port mode, switch it to SWITCH
-        statusFlash('w', 2, 300); // flash white twice for RC input 2
-        statusFlash(hasBMP280, 1, 300); // indicate BMP280 module present
-      }
-      if (currentCh2 > 1500) {
-        // switch is up (above 1500), auto-scroll through shows
-        if (currentMillis - prevAutoMillis > 2000) { // auto-advance after 2 seconds
-          currentShow += 1;
-          prevAutoMillis = currentMillis;
-        }
-      } else { // switch is down (below 1500), stop autoscrolling, reset timer
-        prevAutoMillis = currentMillis - 1995; // this keeps the the auto-advance timer constantly primed, so when flipping the switch again, it advances right away
-      }
-    }
-  }
-  if (rcInputPort == EITHER) {
-    statusFlash('r', 1, 300); // flash red to indicate no signal
-  }
-  currentShow = currentShow % numActiveShows; // keep currentShow within the limits of our active shows
-#else // TESTMODE is defined, force specified show number
-  delayMicroseconds(20000); // pulseIn does cause a delay itself, so this helps keep things somewhat similar
+#ifdef TESTMODE // TESTMODE is defined, force specified show number
   currentShow = TESTMODE;
+#else // TESTMODE isn't defined, read the RC signal
+  static unsigned long prevAutoMillis = 0;
+
+#ifndef ARDUINO_ARCH_RP2040
+  readInputs(); // read RC input here if on atmega chip, rp2040 reads on second core
+#endif
+
+  uint16_t input;
+  if (currentCh == CH1) {
+    input = currentCh1;
+    
+    if (input < pwmLow || input > pwmHigh) {
+      pwmLow = min(input, pwmLow);
+      pwmHigh = max(input, pwmHigh);
+      updateStep();
+    }
+
+    if ((currentShow > 0) && (currentCh1 < (pwmLow + (showStep * currentShow) - showThresh))) { 
+      currentShow--;
+    } else if ((currentShow < (numActiveShows-1)) && (currentCh1 > (pwmLow + (showStep * (currentShow+1)) + showThresh))) {
+      currentShow++;
+    }
+  } else if (currentCh == CH2) {
+    input = currentCh2;
+    unsigned long currentMillis = millis();
+    if (input > 1500) {
+      // switch is up (above 1500), auto-scroll through shows
+      if (currentMillis - prevAutoMillis > 2000) { // auto-advance after 2 seconds
+        currentShow += 1;
+        prevAutoMillis = currentMillis;
+      }
+    } else { // switch is down (below 1500), stop autoscrolling, reset timer
+      prevAutoMillis = currentMillis - 1995; // keep auto-advance timer primed, so when flipping the switch again, it advances right away
+    }
+  }
+
+  currentShow = currentShow % numActiveShows; // keep currentShow within the limits of our active shows
 #endif
   
-  // Are we entering program mode?
-  if (digitalRead(PROGRAM_CYCLE_BTN) == LOW) { // Is the Program button pressed?
-    programModeCounter = programModeCounter + (currentMillis - progMillis); // increment the counter by how many milliseconds have passed
-    if (programModeCounter > 3000) { // Has the button been held down for 3 seconds?
-      programMode = true;
-      programModeCounter = 0;
-      Serial.println(F("Entering program mode"));
-      statusFlash('w'); //strobe the leds to indicate entering program mode
-      currentShow = 0;
-      statusFlash(settings.enabledShows[currentShow]);
-    }
-  } else if (digitalRead(PROGRAM_ENABLE_BTN) == LOW) { // Program button not pressed, but is Enable/Disable button pressed?
-    programModeCounter = programModeCounter + (currentMillis - progMillis);
-    if (programModeCounter > 3000) {
-      // toggle the navlights on/off
-      if (settings.navlights == true) {settings.navlights = false;}
-      else {settings.navlights = true;}
-      saveSettings();
-      programModeCounter = 0;
-    }
-  } else { // no buttons are being pressed
-    programModeCounter = 0;
+  // process button presses
+  int cyclePress = cycleBtn.getPress();
+  int enablePress = enableBtn.getPress();
+  if (cyclePress == LONG) {
+    enterProgramMode();
+  } else if (enablePress == LONG) {
+    toggleNavLights();
   }
-  progMillis = currentMillis;
+}
+
+
+void enterProgramMode() {
+  programMode = true;
+  Serial.println(F("Entering program mode"));
+  statusFlash('w'); //strobe the leds to indicate entering program mode
+  currentShow = 0;
+  statusFlash(settings.enabledShows[currentShow]);
+}
+
+
+void exitProgramMode() {
+  programMode = false;
+  Serial.println(F("Exiting program mode"));
+  saveSettings();
+  updateActiveShows();
+  statusFlash('w'); //strobe the leds to indicate leaving program mode
+}
+
+void goNextShow() {
+  currentShow = (currentShow + 1) % numShows;
+}
+
+void goPrevShow() {
+  currentShow -= 1;
+  if (currentShow > numShows) {
+    currentShow = 0;
+  }
+}
+
+
+void toggleShow() {
+  if (settings.enabledShows[currentShow] == true) {
+    settings.enabledShows[currentShow] = false;
+    Serial.println(F("disabled"));
+  } else {
+    settings.enabledShows[currentShow] = true;
+    Serial.println(F("enabled"));
+  }
+  statusFlash(settings.enabledShows[currentShow]);
+}
+
+
+void updateStep() {
+  showStep = (pwmHigh - pwmLow) / numActiveShows;
+  showThresh = showStep >> 2;
+}
+
+
+void updateActiveShows() {
+  uint8_t active = 0;
+
+  for (int i = 0; i < numShows; i++) {
+    if (settings.enabledShows[i]) {
+      activeShowNumbers[active] = i;
+      active++;
+    }
+  }
+  numActiveShows = active;
+  updateStep();
 }

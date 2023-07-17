@@ -1,15 +1,27 @@
 #pragma once
 
-/**
- * @brief Runs if we're in programMode.
- * Handles buttons, cycling through shows, enabling/disabling.
- * 
- */
+
+extern bool programMode;
+extern bool visualizeMode;
+extern bool haveSignal;
+
+
+void currentMode();
+
 void program();
 
-/**
- * @brief Runs if we're not in programMode.
- * Reads RC input and sets currentShow correctly.
- * 
- */
 void normal();
+
+void enterProgramMode();
+
+void exitProgramMode();
+
+void goNextShow();
+
+void goPrevShow();
+
+void toggleShow();
+
+void updateStep();
+
+void updateActiveShows();

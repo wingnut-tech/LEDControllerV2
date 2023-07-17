@@ -1,50 +1,45 @@
+#include "shows.h"
+
 #include "../LEDController.h"
-#include "../layout.h"
 
 #include "LED.h"
 #include "patterns.h"
 #include "eeprom.h"
-#include "shows.h"
+#include "pins.h"
+#include "bmx280.h"
+#include "mode.h"
 
 #define FASTLED_INTERNAL
 #include <FastLED.h>
-#include <Adafruit_BMP280.h>
 
-extern LED Right;
-extern LED Left;
-extern LED Nose;
-extern LED Fuse;
-extern LED Tail;
 
-extern uint8_t activeShowNumbers[];
-extern int interval;
-extern int currentStep;
-extern bool programMode;
-extern Adafruit_BMP280 bmp;
-extern float basePressure;
-
-extern Settings settings;
-
+uint8_t numShows = NUM_SHOWS_WITH_ALTITUDE; // numShows becomes 1 less if no BMP280 module is installed
+uint8_t numActiveShows = numShows; // how many actual active shows
+uint8_t activeShowNumbers[NUM_SHOWS_WITH_ALTITUDE]; // our array of currently active show switchcase numbers
 uint8_t currentShow = 0;
-uint8_t prevShow;
+int interval = 20;
 
-const uint8_t maxLeds = max(WING_LEDS, max((NOSE_LEDS+FUSE_LEDS), TAIL_LEDS));
+static uint8_t prevShow;
+static int currentStep = 0; // this is just a global general-purpose counter variable that any show can use for whatever it needs
+static bool reset = false;
+static uint32_t frame = 0;
 
 void stepShow() {
+  if (!haveSignal && !programMode && !visualizeMode) {
+    interval = 20;
+    noSignal();
+    return;
+  }
+  digitalWrite(STATUS_LED, LOW);
+
   #define caseshow(x,y,i) case x: y; interval=i; break; // macro for switchcases with a built-in break
   
   if (currentShow != prevShow) { // did we just switch to a new show?
-    Serial.print(F("Current Show: "));
-    Serial.println(currentShow);
-    currentStep = 0; // reset the global general-purpose counter
-    setColor(CRGB::Black);
-    if (programMode) { // if we're in program mode and just switched, indicate show status
-      statusFlash(settings.enabledShows[currentShow]); //flash all LEDs red/green to indicate current show status
-    }
+    resetShow();
   }
 
   int switchShow; // actual show to select in the switchcase
-  if (programMode) { // if we're in program mode, select from all shows
+  if (programMode || visualizeMode) { // if we're in program mode, select from all shows
     switchShow = currentShow;
   } else { // if not in program mode, only select from enabled shows
     switchShow = activeShowNumbers[currentShow];
@@ -67,7 +62,7 @@ void stepShow() {
     caseshow(8,  setColor(CRGB::Indigo), 50);
     caseshow(9,  setColor(CRGB::DarkCyan), 50);
     caseshow(10, setColor(CRGB::White), 50);
-    caseshow(11, twinkle1(), 10); // twinkle effect
+    caseshow(11, twinkle1(reset), 10); // twinkle effect
     caseshow(12, strobe(3), 50); // Realistic double strobe alternating between wings
     caseshow(13, strobe(2), 50); // Realistic landing-light style alternating between wings
     caseshow(14, strobe(1), 50); // unrealistic rapid strobe of all non-nav leds, good locator/identifier. also might cause seizures
@@ -79,15 +74,36 @@ void stepShow() {
     // altitude needs to be the last show so we can disable it if no BMP280 module is installed
     caseshow(19, altitude(variometer), 100); // second parameter can be to another number for "fake" altitude
   }
+  reset = false;
   prevShow = currentShow;
+  frame++;
+}
+
+uint8_t beat(uint16_t bpm) {
+  return (frame*interval * (bpm << 8) * 280) >> 24;
+}
+
+void resetShow() {
+  reset = true;
+  currentStep = 0; // reset the global general-purpose counter
+  setColor(CRGB::Black);
+  if (visualizeMode) {
+    frame = 0;
+  } else {
+    Serial.print(F("Current Show: "));
+    Serial.println(currentShow);
+    if (programMode) { // if we're in program mode and just switched, indicate show status
+      statusFlash(settings.enabledShows[currentShow]); //flash all LEDs red/green to indicate current show status
+    }
+  }
 }
 
 void setColor(const CRGB& color) {
   fill_solid(Right.leds, Right.stopPoint, color);
   fill_solid(Left.leds, Left.stopPoint, color);
-  fill_solid(Nose.leds, NOSE_LEDS, color);
-  fill_solid(Fuse.leds, FUSE_LEDS, color);
-  fill_solid(Tail.leds, TAIL_LEDS, color);
+  fill_solid(Nose.leds, Nose.stopPoint, color);
+  fill_solid(Fuse.leds, Fuse.stopPoint, color);
+  fill_solid(Tail.leds, Tail.stopPoint, color);
   FastLED.show();
 }
 
@@ -97,34 +113,34 @@ void setColor(const CRGBPalette16& palette) {
     // 240 is actually the correct wrap-around point
     Right.set(i, ColorFromPalette(palette, map(i, 0, Right.stopPoint, 0, 240)));
     Left.set(i, ColorFromPalette(palette, map(i, 0, Left.stopPoint, 0, 240)));
-    Tail.set(i, ColorFromPalette(palette, map(i, 0, TAIL_LEDS, 0, 240)));
-    if (NOSE_FUSE_JOINED) {
-      setNoseFuse(i, ColorFromPalette(palette, map(i, 0, NOSE_LEDS+FUSE_LEDS, 0, 240)));
+    Tail.set(i, ColorFromPalette(palette, map(i, 0, Tail.stopPoint, 0, 240)));
+    if (layout.nosefusejoined) {
+      setNoseFuse(i, ColorFromPalette(palette, map(i, 0, Nose.stopPoint+Fuse.stopPoint, 0, 240)));
     } else {
-      Nose.set(i, ColorFromPalette(palette, map(i, 0, NOSE_LEDS, 0, 240)));
-      Fuse.set(i, ColorFromPalette(palette, map(i, 0, FUSE_LEDS, 0, 240)));
+      Nose.set(i, ColorFromPalette(palette, map(i, 0, Nose.stopPoint, 0, 240)));
+      Fuse.set(i, ColorFromPalette(palette, map(i, 0, Fuse.stopPoint, 0, 240)));
     }
   }
   FastLED.show();
 }
 
-void setNoseFuse(uint8_t led, const CRGB& color, bool addor=false) {
-  if (led < NOSE_LEDS) { // less than NOSE_LEDS, set the nose
+void setNoseFuse(uint8_t led, const CRGB& color, bool addor) {
+  if (led < Nose.stopPoint) { // less than nose stopPoint, set the nose
     if (addor) {
       Nose.addor(led, color);
     } else {
       Nose.set(led, color);
     }
-  } else { // greater than NOSE_LEDS, set fuse (minus NOSE_LEDS)
+  } else { // greater than nose stopPoint, set fuse (minus nose stopPoint)
     if (addor) {
-      Fuse.addor(led-NOSE_LEDS, color);
+      Fuse.addor(led-Nose.stopPoint, color);
     } else {
-      Fuse.set(led-NOSE_LEDS, color);
+      Fuse.set(led-Nose.stopPoint, color);
     }
   }
 }
 
-void setBothWings(uint8_t led, const CRGB& color, bool addor=false) {
+void setBothWings(uint8_t led, const CRGB& color, bool addor) {
   if (led < Left.stopPoint) { // less than left size, set left wing, but reversed (start at outside)
     if (addor) {
       Left.addor(Left.stopPoint - led - 1, color);
@@ -148,7 +164,7 @@ void animateColor(const CRGBPalette16& palette, int ledOffset, int stepSize) {
     Right.set(i, color);
     Left.set(i, color);
     Tail.set(i, color);
-    if (NOSE_FUSE_JOINED) {
+    if (layout.nosefusejoined) {
       setNoseFuse(i, color);
     } else {
       Nose.set(i, color);
@@ -169,7 +185,7 @@ void colorWave1(uint8_t ledOffset) {
     // the CHSV() function uses uint8_t, so wrap-around is already taken care of
     CRGB color = CHSV(currentStep + (ledOffset * i), 255, 255);
     Tail.set(i, color);
-    if (NOSE_FUSE_JOINED) {
+    if (layout.nosefusejoined) {
       setNoseFuse(i, color);
     } else {
       Nose.set(i, color);
@@ -180,7 +196,7 @@ void colorWave1(uint8_t ledOffset) {
   FastLED.show();
 }
 
-void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail, bool cylon=false) {
+void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t speedNose, uint8_t speedFuse, uint8_t speedTail, bool cylon) {
   // fade out the whole string to get a nice fading trail
   if (color2 == (CRGB)CRGB::Black) { // if our second color is black, do nscale8, because lerp never gets there
     Right.nscale8(192);
@@ -198,24 +214,24 @@ void chase(const CRGB& color1, const CRGB& color2, uint8_t speedWing, uint8_t sp
 
   if (cylon == true) {
     // cylon uses both wings, and triwave to get a nice back-and-forth
-    setBothWings(scale8(triwave8(beat8(speedWing)), (Right.stopPoint+Left.stopPoint)-1), color1);
-    Tail.set(scale8(triwave8(beat8(speedTail)), TAIL_LEDS-1), color1);
-    if (NOSE_FUSE_JOINED) {
-      setNoseFuse(scale8(triwave8(beat8(speedFuse)), (NOSE_LEDS+FUSE_LEDS)-1), color1);
+    setBothWings(scale8(triwave8(beat(speedWing)), (Right.stopPoint+Left.stopPoint)-1), color1);
+    Tail.set(scale8(triwave8(beat(speedTail)), Tail.stopPoint-1), color1);
+    if (layout.nosefusejoined) {
+      setNoseFuse(scale8(triwave8(beat(speedFuse)), (Nose.stopPoint+Fuse.stopPoint)-1), color1);
     } else {
-      Nose.set(scale8(triwave8(beat8(speedNose)), NOSE_LEDS-1), color1);
-      Fuse.set(scale8(triwave8(beat8(speedFuse)), FUSE_LEDS-1), color1);
+      Nose.set(scale8(triwave8(beat(speedNose)), Nose.stopPoint-1), color1);
+      Fuse.set(scale8(triwave8(beat(speedFuse)), Fuse.stopPoint-1), color1);
     }
   } else {
     // chase just goes out in the same direction
-    Right.set(scale8(beat8(speedWing), Right.stopPoint-1), color1);
-    Left.set(scale8(beat8(speedWing), Left.stopPoint-1), color1);
-    Tail.set(scale8(beat8(speedTail), TAIL_LEDS-1), color1);
-    if (NOSE_FUSE_JOINED) {
-      setNoseFuse(scale8(beat8(speedFuse), (NOSE_LEDS+FUSE_LEDS)-1), color1);
+    Right.set(scale8(beat(speedWing), Right.stopPoint-1), color1);
+    Left.set(scale8(beat(speedWing), Left.stopPoint-1), color1);
+    Tail.set(scale8(beat(speedTail), Tail.stopPoint-1), color1);
+    if (layout.nosefusejoined) {
+      setNoseFuse(scale8(beat(speedFuse), (Nose.stopPoint+Fuse.stopPoint)-1), color1);
     } else {
-      Nose.set(scale8(beat8(speedNose), NOSE_LEDS-1), color1);
-      Fuse.set(scale8(beat8(speedFuse), FUSE_LEDS-1), color1);
+      Nose.set(scale8(beat(speedNose), Nose.stopPoint-1), color1);
+      Fuse.set(scale8(beat(speedFuse), Fuse.stopPoint-1), color1);
     }
   }
 
@@ -234,13 +250,13 @@ void juggle(uint8_t numPulses, uint8_t speed) {
 
   for (uint8_t i = 0; i < numPulses; i++) {
     // use addor on everything, so colors add when overlapping
-    setBothWings(beatsin8(i+speed, 0, (Right.stopPoint+Left.stopPoint)-1), CHSV(i*spread + beat8(1), 200, 255), true);
-    Tail.addor(beatsin8(i+speed, 0, TAIL_LEDS-1), CHSV(i*spread + beat8(1), 200, 255));
-    if (NOSE_FUSE_JOINED) {
-      setNoseFuse(beatsin8(i+speed, 0, (NOSE_LEDS+FUSE_LEDS)-1), CHSV(i*spread + beat8(1), 200, 255), true);
+    setBothWings(scale8(sin8(beat(i+speed)), (Right.stopPoint+Left.stopPoint)-1), CHSV(i*spread + beat(1), 200, 255), true);
+    Tail.addor(scale8(sin8(beat(i+speed)), Tail.stopPoint-1), CHSV(i*spread + beat(1), 200, 255));
+    if (layout.nosefusejoined) {
+      setNoseFuse(scale8(sin8(beat(i+speed)), (Nose.stopPoint+Fuse.stopPoint)-1), CHSV(i*spread + beat(1), 200, 255), true);
     } else {
-      Nose.addor(beatsin8(i+speed, 0, NOSE_LEDS-1), CHSV(i*spread + beat8(1), 200, 255));
-      Fuse.addor(beatsin8(i+speed, 0, FUSE_LEDS-1), CHSV(i*spread + beat8(1), 200, 255));
+      Nose.addor(scale8(sin8(beat(i+speed)), Nose.stopPoint-1), CHSV(i*spread + beat(1), 200, 255));
+      Fuse.addor(scale8(sin8(beat(i+speed)), Fuse.stopPoint-1), CHSV(i*spread + beat(1), 200, 255));
     }
   }
 
@@ -249,6 +265,11 @@ void juggle(uint8_t numPulses, uint8_t speed) {
 
 void navLights() {
   static uint8_t navStrobeState = 0;
+
+  if (!visualizeMode && (!haveSignal || !settings.navlights)) {
+    return;
+  }
+
   switch(navStrobeState) {
     case 50:
     case 51:
@@ -320,17 +341,15 @@ void strobe(int style) {
 
   fill_solid(Right.leds, Right.stopPoint, right);
   fill_solid(Left.leds, Left.stopPoint, left);
-  fill_solid(Nose.leds, NOSE_LEDS, body);
-  fill_solid(Fuse.leds, FUSE_LEDS, body);
-  fill_solid(Tail.leds, TAIL_LEDS, tail);
+  fill_solid(Nose.leds, Nose.stopPoint, body);
+  fill_solid(Fuse.leds, Fuse.stopPoint, body);
+  fill_solid(Tail.leds, Tail.stopPoint, tail);
 
   currentStep++;
   FastLED.show();
 }
 
-void altitude(const CRGBPalette16& palette, double fake=0) {
-#define METRIC_CONVERSION 3.3; // 3.3 to convert meters to feet. 1 for meters.
-
+void altitude(const CRGBPalette16& palette, double fake) {
   static double prevAlt;
   static int avgVSpeed[] = {0,0,0};
 
@@ -338,7 +357,7 @@ void altitude(const CRGBPalette16& palette, double fake=0) {
   int vSpeed;
   double currentAlt;
 
-  currentAlt = bmp.readAltitude(basePressure)*METRIC_CONVERSION;
+  currentAlt = getAltitude();
   
   if (fake != 0) {currentAlt = fake;}
 
@@ -381,16 +400,7 @@ void altitude(const CRGBPalette16& palette, double fake=0) {
 
   vspeedMap = map(vSpeed, -interval, interval, 0, 240);
 
-  fill_solid(Tail.leds, TAIL_LEDS, ColorFromPalette(palette, vspeedMap));
-
-  #ifdef DEBUG_ALTITUDE
-  Serial.print(F("Current relative altitude:  "));
-  Serial.print(currentAlt);
-  Serial.print(F("\t\tVSpeed: "));
-  Serial.print(vSpeed);
-  Serial.print(F("\tVSpeedMap: "));
-  Serial.println(vspeedMap);
-  #endif
+  fill_solid(Tail.leds, Tail.stopPoint, ColorFromPalette(palette, vspeedMap));
 
   prevAlt = currentAlt;
 
@@ -399,7 +409,7 @@ void altitude(const CRGBPalette16& palette, double fake=0) {
 
 enum {SteadyDim, Dimming, Brightening};
 
-void doTwinkle1(CRGB * ledArray, uint8_t * pixelState, uint8_t size) {
+void doTwinkle1(CRGB * ledArray, uint8_t * pixelState, uint8_t size, bool reset) {
   const CRGB colorDown = CRGB(1, 1, 1);
   const CRGB colorUp = CRGB(8, 8, 8);
   const CRGB colorMax = CRGB(128, 128, 128);
@@ -412,7 +422,7 @@ void doTwinkle1(CRGB * ledArray, uint8_t * pixelState, uint8_t size) {
       if (random8() < twinkleChance) {
         pixelState[i] = Brightening;
       }
-      if (prevShow != currentShow) { // Reset all LEDs at start of show
+      if (reset) { // Reset all LEDs at start of show
         ledArray[i] = colorMin;
       }
     }
@@ -438,27 +448,27 @@ void doTwinkle1(CRGB * ledArray, uint8_t * pixelState, uint8_t size) {
   }
 }
 
-void twinkle1() {
+void twinkle1(bool reset) {
   // arrays to hold the state of each LED of each strip
-  static uint8_t pixelStateRight[WING_LEDS];
-  static uint8_t pixelStateLeft[WING_LEDS];
-  static uint8_t pixelStateNose[NOSE_LEDS];
-  static uint8_t pixelStateFuse[FUSE_LEDS];
-  static uint8_t pixelStateTail[TAIL_LEDS];
+  static uint8_t* pixelStateRight = new uint8_t[Right.numLeds];
+  static uint8_t* pixelStateLeft = new uint8_t[Left.numLeds];
+  static uint8_t* pixelStateNose = new uint8_t[Nose.numLeds];
+  static uint8_t* pixelStateFuse = new uint8_t[Fuse.numLeds];
+  static uint8_t* pixelStateTail = new uint8_t[Tail.numLeds];
 
-  if (prevShow != currentShow) { // Reset everything at start of show
-    memset(pixelStateRight, SteadyDim, sizeof(pixelStateRight));
-    memset(pixelStateLeft, SteadyDim, sizeof(pixelStateLeft));
-    memset(pixelStateNose, SteadyDim, sizeof(pixelStateNose));
-    memset(pixelStateFuse, SteadyDim, sizeof(pixelStateFuse));
-    memset(pixelStateTail, SteadyDim, sizeof(pixelStateTail));
+  if (reset) { // Reset everything at start of show
+    memset(pixelStateRight, SteadyDim, sizeof(*pixelStateRight)*Right.numLeds);
+    memset(pixelStateLeft, SteadyDim, sizeof(*pixelStateLeft)*Left.numLeds);
+    memset(pixelStateNose, SteadyDim, sizeof(*pixelStateNose)*Nose.numLeds);
+    memset(pixelStateFuse, SteadyDim, sizeof(*pixelStateFuse)*Fuse.numLeds);
+    memset(pixelStateTail, SteadyDim, sizeof(*pixelStateTail)*Tail.numLeds);
   }
 
-  doTwinkle1(Right.leds, pixelStateRight, Right.stopPoint);
-  doTwinkle1(Left.leds,  pixelStateLeft, Left.stopPoint);
-  doTwinkle1(Nose.leds,  pixelStateNose, NOSE_LEDS);
-  doTwinkle1(Fuse.leds,  pixelStateFuse, FUSE_LEDS);
-  doTwinkle1(Tail.leds,  pixelStateTail, TAIL_LEDS);
+  doTwinkle1(Right.leds, pixelStateRight, Right.stopPoint, reset);
+  doTwinkle1(Left.leds,  pixelStateLeft, Left.stopPoint, reset);
+  doTwinkle1(Nose.leds,  pixelStateNose, Nose.stopPoint, reset);
+  doTwinkle1(Fuse.leds,  pixelStateFuse, Fuse.stopPoint, reset);
+  doTwinkle1(Tail.leds,  pixelStateTail, Tail.stopPoint, reset);
 
   FastLED.show();
 }
@@ -485,18 +495,40 @@ void statusFlash(uint8_t status, uint8_t numFlashes, int delay_time) {
   for (int j = 0; j < numFlashes*2; j++) {
     if ((j % 2) == 0) {
       c = color;
-      digitalWrite(LED_BUILTIN, HIGH);
+      digitalWrite(STATUS_LED, HIGH);
     } else {
       c = CRGB::Black;
-      digitalWrite(LED_BUILTIN, LOW);
+      digitalWrite(STATUS_LED, LOW);
     }
-    fill_solid(Right.leds, WING_LEDS, c);
-    fill_solid(Left.leds, WING_LEDS, c);
-    fill_solid(Nose.leds, NOSE_LEDS, c);
-    fill_solid(Fuse.leds, FUSE_LEDS, c);
-    fill_solid(Tail.leds, TAIL_LEDS, c);
+    fill_solid(Right.leds, Right.stopPoint, c);
+    fill_solid(Left.leds, Left.stopPoint, c);
+    fill_solid(Nose.leds, Nose.stopPoint, c);
+    fill_solid(Fuse.leds, Fuse.stopPoint, c);
+    fill_solid(Tail.leds, Tail.stopPoint, c);
     FastLED.show();
     delay(delay_time);
   }
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(STATUS_LED, LOW);
+}
+
+void noSignal() {
+  CRGB c;
+  if (currentStep < 15) {
+    c = CRGB::Red;
+    digitalWrite(STATUS_LED, HIGH);
+  } else if (currentStep < 30) {
+    c = CRGB::Black;
+    digitalWrite(STATUS_LED, LOW);
+  } else {
+    currentStep = -1;
+  }
+
+  fill_solid(Right.leds, Right.numLeds, c);
+  fill_solid(Left.leds, Left.numLeds, c);
+  fill_solid(Nose.leds, Nose.numLeds, c);
+  fill_solid(Fuse.leds, Fuse.numLeds, c);
+  fill_solid(Tail.leds, Tail.numLeds, c);
+  FastLED.show();
+
+  currentStep++;
 }
