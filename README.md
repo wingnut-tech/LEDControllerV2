@@ -13,14 +13,14 @@ Note: v2 boards allow configuring both the layout and the enabled/disabled shows
 ## Flashing:
 
 ### v2 boards:
-- Download the .uf2 file (from the latest [release](https://github.com/wingnut-tech/LEDController/releases), or from the configurator page)
+- Download the .uf2 file (from the latest [release](https://github.com/wingnut-tech/LEDControllerV2/releases), or from the configurator page)
 - Hold down the "Boot" button on the board while plugging it in to your computer via USB
 - Drag-and-drop or copy/paste the .uf2 file into the "RPI-RP2" drive that shows up
 
 
 ### v1 boards:
-- Download the .hex file (from the latest [release](https://github.com/wingnut-tech/LEDController/releases), or from the configurator page)
-- Download and run the [HEX Flasher](https://github.com/wingnut-tech/haxflasher) to upload the .hex file to your board
+- Download the .hex file (from the latest [release](https://github.com/wingnut-tech/LEDControllerV2/releases), or from the configurator page)
+- Download and run the [HEX Uploader](https://github.com/wingnut-tech/HEXUploader) to upload the .hex file to your board
 
 ---
 
@@ -28,9 +28,3 @@ Note: v2 boards allow configuring both the layout and the enabled/disabled shows
 
 BMX280 library from <https://github.com/Erriez/ErriezBMX280> (v1.0.1)  
 FastLED library from <https://github.com/FastLED/FastLED> (v3.6.0)  
-
----
-
-
-
-
