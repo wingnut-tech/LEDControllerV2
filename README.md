@@ -2,7 +2,7 @@
 
 ## Configuration:
 
-The firmware comes set up for the FT Night Radian by default. If you have a different layout of LED strips, you can use the [LED Controller Configurator](https://wingnuttech.github.io/LEDControllerConfigurator/) to create a new layout.
+The firmware comes set up for the FT Night Radian by default. If you have a different layout of LED strips, you can use the [LED Controller Configurator](https://wingnut-tech.github.io/LEDControllerConfigurator/) to create a new layout.
 
 After configuring, you can download the whole firmware plus config, or just the config to apply to an already-flashed board (assuming the flashed firmware is a compatible version).
 
