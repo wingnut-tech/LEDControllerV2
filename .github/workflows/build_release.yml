@@ -1,0 +1,71 @@
+name: Build and release
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+  push:
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        description: "Version number (vX.Y.Z)"
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Build
+        run: ./build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build
+
+  release:
+    needs: [build]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check version
+        run: |
+              git fetch --tags
+              input_ver=${{ inputs.version }}
+              file_ver=$(awk '/VERSION:/ {print $3}' LEDController/LEDController.ino)
+              ch_ver=$(awk -F'[][]' '/\[v[0-9.]+\]/ {print $2; exit}' CHANGELOG.md)
+              git_vers=$(git describe --tags --always $(git rev-list --tags))
+
+              echo "version=$(awk '/VERSION:/ {print $3}' LEDController/LEDController.ino)" >> $GITHUB_ENV
+
+              echo "Input version:     ${input_ver}"
+              echo "File version:      ${file_ver}"
+              echo "Changelog version: ${ch_ver}"
+              echo "Latest git tag:    ${git_vers%%$'\n'*}"
+
+              if [[ ! (($input_ver == $file_ver && $file_ver == $ch_ver) && (! $git_vers =~ $file_ver)) ]]; then echo "Version issue!"; exit 1; fi
+
+      - name: Generate changelog
+        run: awk '/^## / {if (p) {exit}; {p=1}} p' CHANGELOG.md > latest-CHANGELOG.md
+
+      - name: Get build artifact
+        uses: actions/download-artifact@v3
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.version }}
+          body_path: latest-CHANGELOG.md
+          files: build/*
