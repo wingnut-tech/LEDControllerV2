@@ -2,8 +2,8 @@ board_manager:
   additional_urls:
     - https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
 directories:
-  data: ./build/.arduino/data
-  downloads: ./build/.arduino/staging
+  data: /tmp/build/.arduino/data
+  downloads: /tmp/build/.arduino/staging
   user: ./
 updater:
   enable_notification: false
