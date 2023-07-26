@@ -39,4 +39,7 @@ fi
 if [[ $sel == "new" || $sel == "both" ]]; then
   $arduino_cli_cmd compile -b rp2040:rp2040:generic --output-dir ${BUILD_DIR}/rev2 LEDController
   cp ${BUILD_DIR}/rev2/LEDController.ino.uf2 ./build/firmware_${ver}.uf2
+  if [[ $2 == "-u" ]]; then
+    $arduino_cli_cmd upload -i ./build/firmware_${ver}.uf2 -b rp2040:rp2040:generic -p /dev/ttyACM0
+  fi
 fi
