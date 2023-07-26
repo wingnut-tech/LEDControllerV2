@@ -350,14 +350,18 @@ void strobe(int style) {
 }
 
 void altitude(const CRGBPalette16& palette, double fake) {
-  static double prevAlt;
+  static double prevAlt = 0;
   static int avgVSpeed[] = {0,0,0};
 
 
   int vSpeed;
   double currentAlt;
 
-  currentAlt = getAltitude();
+  if (visualizeMode) {
+    currentAlt = sin8(beat(12))*2;
+  } else {
+    currentAlt = getAltitude();
+  }
   
   if (fake != 0) {currentAlt = fake;}
 
