@@ -1,6 +1,8 @@
 #!/bin/bash
 
-BUILD_DIR=/tmp/build
+set -euo pipefail
+
+BUILD_DIR=$(mktemp -d)
 mkdir -p ${BUILD_DIR}
 mkdir -p ./build
 
