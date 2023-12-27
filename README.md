@@ -24,7 +24,17 @@ Note: v2 boards allow configuring both the layout and the enabled/disabled shows
 
 ---
 
+## Building/Development
+
+### Setup
+- `git submodule init`
+- `git submodule update`
+
+### Build
+
+- `./build.sh new`
+
 ## Libraries used
 
-BMX280 library from <https://github.com/Erriez/ErriezBMX280> (v1.0.1)  
-FastLED library from <https://github.com/FastLED/FastLED> (v3.6.0)  
+- BMX280 library from <https://github.com/Erriez/ErriezBMX280> (v1.0.1)
+- FastLED library from <https://github.com/FastLED/FastLED> (v3.6.0)
